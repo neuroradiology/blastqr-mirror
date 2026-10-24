@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/send/qr_page.dart';
+import 'package:blast_qr/features/send/widgets/encryption_sheet.dart';
 import 'package:blast_qr/features/settings/settings_page.dart';
 import 'package:blast_qr/file_badge_count.dart';
 import 'package:blast_qr/file_name_utils.dart';
@@ -522,12 +523,14 @@ class _FilesPageState extends State<FilesPage> {
     }
   }
 
-  void _onTapSend(FileWrapper file) {
+  void _onTapSend(FileWrapper file) async {
+    final encryption = await chooseSendEncryption(context);
+    if (encryption == null || !mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (context) {
-          return QrPage(file: file);
+          return QrPage(file: file, password: encryption.password);
         },
       ),
     );
@@ -583,24 +586,34 @@ class _FilesPageState extends State<FilesPage> {
     );
   }
 
-  void _sendSelectedFiles(List<FileWrapper> files) {
+  void _sendSelectedFiles(List<FileWrapper> files) async {
     _exitSelectionMode();
-    Navigator.of(context).push(_qrRouteForIndex(files, 0));
+    // One choice (and one password) for the whole batch.
+    final encryption = await chooseSendEncryption(context);
+    if (encryption == null || !mounted) return;
+    Navigator.of(context).push(
+      _qrRouteForIndex(files, 0, encryption.password),
+    );
   }
 
-  Route<void> _qrRouteForIndex(List<FileWrapper> files, int index) {
+  Route<void> _qrRouteForIndex(
+    List<FileWrapper> files,
+    int index,
+    String? password,
+  ) {
     final isLast = index == files.length - 1;
     return MaterialPageRoute(
       fullscreenDialog: true,
       builder:
           (context) => QrPage(
             file: files[index],
+            password: password,
             onNext:
                 isLast
                     ? null
-                    : () => Navigator.of(
-                      context,
-                    ).pushReplacement(_qrRouteForIndex(files, index + 1)),
+                    : () => Navigator.of(context).pushReplacement(
+                      _qrRouteForIndex(files, index + 1, password),
+                    ),
           ),
     );
   }

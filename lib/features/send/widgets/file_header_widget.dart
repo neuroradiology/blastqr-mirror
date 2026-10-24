@@ -1,6 +1,8 @@
 import 'package:blast_qr/color_scheme.dart';
+import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class FileHeaderWidget extends StatelessWidget {
   const FileHeaderWidget({
@@ -8,11 +10,15 @@ class FileHeaderWidget extends StatelessWidget {
     required this.file,
     required this.onTapDismiss,
     this.compressedSize,
+    this.password,
   });
 
   final FileWrapper file;
   final VoidCallback onTapDismiss;
   final int? compressedSize;
+
+  /// Shown with a lock when the transfer is encrypted.
+  final String? password;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +77,7 @@ class FileHeaderWidget extends StatelessWidget {
                       )
                     else
                       Text(file.sizeInkB),
+                    if (password != null) PasswordRow(password: password!),
                   ],
                 ),
               ),
@@ -93,4 +100,68 @@ class FileHeaderWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Lock icon + password, with a button to hide it (e.g. while a camera that
+/// shouldn't see it is pointed at the screen).
+class PasswordRow extends StatefulWidget {
+  const PasswordRow({super.key, required this.password});
+
+  final String password;
+
+  @override
+  State<PasswordRow> createState() => _PasswordRowState();
+}
+
+class _PasswordRowState extends State<PasswordRow> {
+  bool _visible = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      spacing: 6,
+      children: [
+        HugeIcon(
+          icon: HugeIcons.strokeRoundedSquareLock02,
+          size: 18,
+          color: context.color.onSurface,
+        ),
+        Flexible(
+          child: SelectableText(
+            _visible ? widget.password : '••••-••••-••••',
+            maxLines: 1,
+            style: passwordTextStyle(context),
+          ),
+        ),
+        SizedBox(
+          width: 32,
+          height: 32,
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            tooltip: context.l10n.show_password,
+            onPressed: () => setState(() => _visible = !_visible),
+            icon: HugeIcon(
+              icon:
+                  _visible
+                      ? HugeIcons.strokeRoundedViewOff
+                      : HugeIcons.strokeRoundedView,
+              size: 18,
+              color: context.color.onSurface,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Monospace, so similar characters are easy to tell apart.
+TextStyle? passwordTextStyle(BuildContext context, {double fontSize = 18}) {
+  return Theme.of(context).textTheme.titleMedium?.copyWith(
+    fontFamily: 'monospace',
+    fontFamilyFallback: const ['Menlo', 'Roboto Mono', 'Courier'],
+    fontSize: fontSize,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1,
+  );
 }

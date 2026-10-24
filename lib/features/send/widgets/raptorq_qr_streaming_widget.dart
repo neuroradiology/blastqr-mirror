@@ -84,6 +84,9 @@ class RaptorQrStreamingWidget extends StatefulWidget {
   final int mtu;
   final int fps;
   final ImageCompressionSettings? imageCompressionSettings;
+
+  /// Encrypts the transfer with this password when set.
+  final String? password;
   final bool fill;
   final Function()? onTap;
   final void Function(int)? onStart;
@@ -95,6 +98,7 @@ class RaptorQrStreamingWidget extends StatefulWidget {
     required this.fps,
     required this.controller,
     required this.imageCompressionSettings,
+    this.password,
     this.fill = true,
     this.onTap,
     this.onStart,
@@ -162,7 +166,8 @@ class _RaptorQrStreamingWidgetState extends State<RaptorQrStreamingWidget>
       oldWidget.controller.removeListener(_onControllerTick);
       widget.controller.addListener(_onControllerTick);
     }
-    if (oldWidget.file != widget.file) {
+    if (oldWidget.file != widget.file ||
+        oldWidget.password != widget.password) {
       init();
     }
     if (oldWidget.fps != widget.fps) {
@@ -186,6 +191,7 @@ class _RaptorQrStreamingWidgetState extends State<RaptorQrStreamingWidget>
       widget.file,
       widget.mtu,
       icSettings: widget.imageCompressionSettings,
+      password: widget.password,
       onCompressedSize: widget.onStart,
     );
     if (!mounted || generation != _generation) {

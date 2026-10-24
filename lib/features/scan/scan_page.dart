@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
+import 'package:blast_qr/crypto/transfer_crypto.dart';
 import 'package:blast_qr/file_badge_count.dart';
 import 'package:blast_qr/features/scan/received_file_writer.dart';
 import 'package:blast_qr/features/scan/transfer_tracker.dart';
+import 'package:blast_qr/features/scan/widgets/password_sheet.dart';
 import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/blast_qrcode_data.dart';
@@ -59,6 +61,14 @@ class _ScanPageState extends State<ScanPage> {
   late AppSettings _appSettings;
   DateTime _latestScanStartTime = DateTime.now();
   ReceivingFileMetadata? _fileMetadata;
+
+  /// Password typed for the current encrypted transfer (possibly while it's
+  /// still being scanned).
+  String? _transferPassword;
+
+  /// Last password that worked, so a batch of files only needs it once.
+  /// Kept in memory only.
+  String? _sessionPassword;
 
   /// Decides which transfer the scanned frames belong to.
   final _tracker = TransferTracker();
@@ -193,6 +203,11 @@ class _ScanPageState extends State<ScanPage> {
                 .animate(target: _showLowSpeedWarning ? 1 : 0)
                 .fade(delay: 300.ms, begin: -0.5)
                 .moveY(delay: 300.ms),
+            if (_fileMetadata?.isEncrypted == true && !_loadingResult)
+              _EnterPasswordButton(
+                entered: _transferPassword != null,
+                onTap: _askPasswordWhileScanning,
+              ),
             ScanProgressWidget(
               chunkCount: _decodedChunkCount,
               speed: '${_speed.toStringAsFixed(1)}kB/s',
@@ -312,10 +327,15 @@ class _ScanPageState extends State<ScanPage> {
     _fileMetadata = ReceivingFileMetadata(
       size: frame.transferLength,
       isCompressed: frame.isCompressedData,
+      isEncrypted: frame.isEncrypted,
     );
+    _transferPassword = null;
     setState(() {
       _isReceivingData = true;
-      _statusMessage = context.l10n.receiving_generic;
+      _statusMessage =
+          frame.isEncrypted
+              ? context.l10n.receiving_encrypted
+              : context.l10n.receiving_generic;
     });
     _latestScanStartTime = DateTime.now();
     debugPrint('Scanning file with: ${_fileMetadata.toString()}');
@@ -328,6 +348,7 @@ class _ScanPageState extends State<ScanPage> {
     debugPrint('Switching to a new transfer');
     _decoder.reset();
     _fileMetadata = null;
+    _transferPassword = null;
     _progress = 0;
     _decodedChunkCount = 0;
     _dataLengthInLastPeriod = 0;
@@ -382,8 +403,26 @@ class _ScanPageState extends State<ScanPage> {
   }
 
   void _handleResult(Uint8List data) async {
-    if (_fileMetadata == null) {
+    final metadata = _fileMetadata;
+    if (metadata == null) {
       return;
+    }
+
+    if (metadata.isEncrypted) {
+      final Uint8List? plain;
+      try {
+        plain = await _decrypt(data);
+      } catch (error) {
+        debugPrint('Failed to decrypt received file: $error');
+        _showReceiveFailed();
+        return;
+      }
+      // Cancelled, or the transfer was reset while asking.
+      if (plain == null || !mounted || _fileMetadata != metadata) {
+        if (mounted && _fileMetadata == metadata) _reset();
+        return;
+      }
+      data = plain;
     }
     _loadingResult = false;
 
@@ -401,7 +440,7 @@ class _ScanPageState extends State<ScanPage> {
     try {
       resultFile = await saveReceivedFile(
         data: data,
-        gzipped: _fileMetadata!.isCompressed,
+        gzipped: metadata.isCompressed,
         directory: itemsDirectory,
         tempDirectory: await getTemporaryDirectory(),
       );
@@ -428,7 +467,11 @@ class _ScanPageState extends State<ScanPage> {
       _soundService.playTransferComplete();
     }
 
-    _showResultSheet(fileWrapper, elapsedTime).then((_) async {
+    _showResultSheet(
+      fileWrapper,
+      elapsedTime,
+      encrypted: metadata.isEncrypted,
+    ).then((_) async {
       final newFilename = sanitizeFileName(_renameController.text);
       if (mounted && newFilename != fileName) {
         final uniqueName = await resolveUniqueFileName(
@@ -439,6 +482,71 @@ class _ScanPageState extends State<ScanPage> {
       }
       _reset();
     });
+  }
+
+  /// Decrypts a received envelope. Tries the password typed during the
+  /// transfer, then the last one that worked, then asks until it's right.
+  /// Returns null if the user cancels. The received data is kept the whole
+  /// time, so a wrong password never means scanning again. Throws if the
+  /// data can't be decrypted with any password (damaged or unsupported).
+  Future<Uint8List?> _decrypt(Uint8List envelope) async {
+    final metadata = _fileMetadata;
+    final candidates = <String>{
+      if (_transferPassword != null) _transferPassword!,
+      if (_sessionPassword != null) _sessionPassword!,
+    };
+    var failed = false;
+    var lastTried = '';
+    for (final password in candidates) {
+      final plain = await _tryDecrypt(envelope, password);
+      if (plain != null) return plain;
+      failed = true;
+      lastTried = password;
+    }
+
+    while (_fileMetadata == metadata) {
+      if (!mounted) return null;
+      setState(() => _loadingResult = false);
+      final password = await showPasswordSheet(
+        context,
+        initialText: failed ? lastTried : '',
+        wrongPassword: failed,
+      );
+      if (password == null || !mounted || _fileMetadata != metadata) {
+        return null;
+      }
+      final plain = await _tryDecrypt(envelope, password);
+      if (plain != null) return plain;
+      failed = true;
+      lastTried = password;
+    }
+    return null;
+  }
+
+  /// The plaintext, or null if [password] is wrong. Other errors are
+  /// rethrown.
+  Future<Uint8List?> _tryDecrypt(Uint8List envelope, String password) async {
+    setState(() => _loadingResult = true);
+    try {
+      final plain = await TransferCrypto.decrypt(envelope, password);
+      _sessionPassword = password;
+      return plain;
+    } on TransferCryptoError catch (error) {
+      if (error == TransferCryptoError.wrongPassword) return null;
+      rethrow;
+    }
+  }
+
+  /// Lets the user type the password while the transfer is still arriving.
+  Future<void> _askPasswordWhileScanning() async {
+    final metadata = _fileMetadata;
+    final password = await showPasswordSheet(
+      context,
+      initialText: _transferPassword ?? '',
+    );
+    if (password != null && mounted && _fileMetadata == metadata) {
+      setState(() => _transferPassword = password);
+    }
   }
 
   void _showReceiveFailed() {
@@ -454,7 +562,11 @@ class _ScanPageState extends State<ScanPage> {
     ).then((_) => _reset());
   }
 
-  Future<void> _showResultSheet(FileWrapper file, double timeInSeconds) async {
+  Future<void> _showResultSheet(
+    FileWrapper file,
+    double timeInSeconds, {
+    bool encrypted = false,
+  }) async {
     _renameController.text = file.name;
     final speed = ((file.size / 1000) / timeInSeconds).toStringAsFixed(1);
     return showSheet(
@@ -463,6 +575,22 @@ class _ScanPageState extends State<ScanPage> {
           '${context.l10n.received_in} ${timeInSeconds.toStringAsFixed(1)}s (${speed}kB/s)',
       body: Column(
         children: [
+          if (encrypted)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 6,
+                children: [
+                  HugeIcon(
+                    icon: HugeIcons.strokeRoundedSquareLock02,
+                    size: 18,
+                    color: context.color.onSurface,
+                  ),
+                  Text(context.l10n.received_encrypted),
+                ],
+              ),
+            ),
           GestureDetector(
             onTap: () {
               _onTapOpen(file);
@@ -580,6 +708,7 @@ class _ScanPageState extends State<ScanPage> {
     _speed = 0;
     _decodedChunkCount = 0;
     _fileMetadata = null;
+    _transferPassword = null;
     _tracker.reset();
     _renameController.text = '';
     _showLowSpeedWarning = false;
@@ -650,6 +779,42 @@ class _ScanPageState extends State<ScanPage> {
       final snackBar = SnackBar(content: Text(error.toString()));
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
+  }
+}
+
+/// "Enter password" pill shown while an encrypted transfer is arriving.
+class _EnterPasswordButton extends StatelessWidget {
+  const _EnterPasswordButton({required this.entered, required this.onTap});
+
+  final bool entered;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom - 64 + 72 + 12,
+        ),
+        child: FilledButton.icon(
+          onPressed: onTap,
+          icon: HugeIcon(
+            icon:
+                entered
+                    ? HugeIcons.strokeRoundedCheckmarkCircle02
+                    : HugeIcons.strokeRoundedSquareLock02,
+            size: 18,
+            color: context.color.onPrimary,
+          ),
+          label: Text(
+            entered
+                ? context.l10n.password_entered
+                : context.l10n.enter_password,
+          ),
+        ),
+      ),
+    );
   }
 }
 

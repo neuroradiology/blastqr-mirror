@@ -5,6 +5,7 @@ import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/help/help_page.dart';
 import 'package:blast_qr/features/send/qr_page.dart';
+import 'package:blast_qr/features/send/widgets/encryption_sheet.dart';
 import 'package:blast_qr/features/settings/settings_page.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/blast_qrcode_data.dart';
@@ -258,7 +259,13 @@ class _SendPageState extends State<SendPage> {
       }
     }
 
-    await Navigator.of(context).push(_qrRouteForIndex(fileWrappers, 0));
+    // One choice (and one password) for the whole batch.
+    final encryption = await chooseSendEncryption(context);
+    if (encryption == null || !mounted) return;
+
+    await Navigator.of(context).push(
+      _qrRouteForIndex(fileWrappers, 0, encryption.password),
+    );
     if (mounted) {
       for (final fw in fileWrappers) {
         _addRecentFile(fw);
@@ -270,18 +277,23 @@ class _SendPageState extends State<SendPage> {
     }
   }
 
-  Route<void> _qrRouteForIndex(List<FileWrapper> fileWrappers, int index) {
+  Route<void> _qrRouteForIndex(
+    List<FileWrapper> fileWrappers,
+    int index,
+    String? password,
+  ) {
     final isLast = index == fileWrappers.length - 1;
     return MaterialPageRoute(
       fullscreenDialog: true,
       builder:
           (context) => QrPage(
             file: fileWrappers[index],
+            password: password,
             onNext:
                 isLast
                     ? null
                     : () => Navigator.of(context).pushReplacement(
-                      _qrRouteForIndex(fileWrappers, index + 1),
+                      _qrRouteForIndex(fileWrappers, index + 1, password),
                     ),
           ),
     );

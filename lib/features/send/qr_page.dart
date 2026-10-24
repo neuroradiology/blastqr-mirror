@@ -17,10 +17,13 @@ import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 class QrPage extends StatefulWidget {
-  const QrPage({super.key, required this.file, this.onNext});
+  const QrPage({super.key, required this.file, this.onNext, this.password});
 
   final FileWrapper file;
   final VoidCallback? onNext;
+
+  /// Encrypts the transfer with this password when set.
+  final String? password;
 
   @override
   State<QrPage> createState() => _QrPageState();
@@ -82,6 +85,7 @@ class _QrPageState extends State<QrPage> {
                 file: widget.file,
                 onTapDismiss: _dismiss,
                 compressedSize: _compressedSize,
+                password: widget.password,
               ),
             Expanded(
               key: const ValueKey('qr_container'),
@@ -133,6 +137,7 @@ class _QrPageState extends State<QrPage> {
                                               ? appSettings
                                                   .imageCompressionSettings
                                               : null,
+                                      password: widget.password,
                                       fill: _fullscreenMode,
                                       onTap: _onToggleFullscreen,
                                       onStart:

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
 
+import 'package:blast_qr/crypto/transfer_crypto.dart';
 import 'package:blast_qr/features/send/helpers/qr_lookup_table.dart';
 import 'package:blast_qr/model/blast_qrcode_data.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
@@ -168,40 +169,50 @@ class QrFrameSource {
 
 /// Builds the transfer object (see [TransferContainer]): the metadata block
 /// with [fileName], then [content], gzipped as a whole if [tryGzip] and only
-/// if that makes it smaller. Returns whether gzip was kept.
+/// if that makes it smaller, then encrypted if a [password] is given.
+/// Returns whether gzip was kept.
 Future<({Uint8List bytes, bool gzipped})> buildTransferObject({
   required String fileName,
   required Uint8List content,
   required bool tryGzip,
+  String? password,
 }) async {
   final metadata = TransferContainer.encodeMetadata(fileName: fileName);
-  final bytes = Uint8List(metadata.length + content.length)
+  var bytes = Uint8List(metadata.length + content.length)
     ..setAll(0, metadata)
     ..setAll(metadata.length, content);
 
+  var gzipped = false;
   if (tryGzip) {
     final compressed = await compute(_gzipCompress, bytes);
     // Only keep gzip when it helps. This also keeps files near the size
     // limit from growing past what the u32 header can describe.
     if (compressed.length < bytes.length) {
-      return (bytes: compressed, gzipped: true);
+      bytes = compressed;
+      gzipped = true;
     }
   }
-  // A future encryption layer goes here: after compression, before RaptorQ,
-  // setting BlastQrcodeData.flagEncrypted.
-  return (bytes: bytes, gzipped: false);
+  // Encrypt last: compressed ciphertext wouldn't shrink, and the filename
+  // in the metadata ends up encrypted too.
+  if (password != null) {
+    bytes = await TransferCrypto.encrypt(bytes, password);
+  }
+  return (bytes: bytes, gzipped: gzipped);
 }
 
 /// The header shared by every frame of one send, with a new random session
 /// id unless [sessionId] is given.
 Uint8List buildFrameHeader({
   required bool gzipped,
+  required bool encrypted,
   required int transferLength,
   required int symbolSize,
   int? sessionId,
 }) {
   return BlastQrcodeData.buildHeader(
-    flags: gzipped ? BlastQrcodeData.flagGzip : 0,
+    flags:
+        (gzipped ? BlastQrcodeData.flagGzip : 0) |
+        (encrypted ? BlastQrcodeData.flagEncrypted : 0),
     kind: BlastQrcodeData.kindFile,
     // Random per send, so receivers can tell a new transfer from an old one.
     sessionId: sessionId ?? 1 + Random.secure().nextInt(0xFFFF),
@@ -213,13 +224,15 @@ Uint8List buildFrameHeader({
 class FileQrEncoder {
   const FileQrEncoder._();
 
-  /// Prepares [file] for sending and starts an endless frame stream.
+  /// Prepares [file] for sending and starts an endless frame stream. With a
+  /// [password], the transfer is encrypted.
   ///
   /// The caller must [QrFrameSource.dispose] the result.
   static Future<QrFrameSource> start(
     FileWrapper file,
     int mtu, {
     ImageCompressionSettings? icSettings,
+    String? password,
     void Function(int)? onCompressedSize,
   }) async {
     var bytes = await file.file.readAsBytes();
@@ -242,6 +255,7 @@ class FileQrEncoder {
       fileName: '${file.nameWithoutExtension}.$fileExtension',
       content: bytes,
       tryGzip: gzipped,
+      password: password,
     );
     bytes = transfer.bytes;
 
@@ -254,6 +268,7 @@ class FileQrEncoder {
 
     final header = buildFrameHeader(
       gzipped: transfer.gzipped,
+      encrypted: password != null,
       transferLength: actualTransferSize,
       symbolSize: encoder.symbolSize,
     );
