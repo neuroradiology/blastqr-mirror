@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:blast_qr/acoustic_ack_listener.dart';
@@ -76,14 +77,14 @@ class _SendPageState extends State<SendPage> {
           return DropOperation.copy;
         },
         onPerformDrop: (event) async {
-          final item = event.session.items.first;
-          final reader = item.dataReader!;
-          reader.getValue<Uri>(Formats.fileUri, (fileUri) {
-            debugPrint('Dropped file: $fileUri');
-            if (fileUri != null) {
-              _showQrPage(File(fileUri.path));
-            }
-          });
+          final uris = await Future.wait(
+            event.session.items.map((item) => _droppedFileUri(item)),
+          );
+          final files = [
+            for (final uri in uris)
+              if (uri != null) File(uri.toFilePath()),
+          ];
+          if (files.isNotEmpty && mounted) _showQrPages(files);
         },
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -216,6 +217,19 @@ class _SendPageState extends State<SendPage> {
     if (images.isNotEmpty && mounted) {
       _showQrPages(images.map((f) => File(f.path)).toList());
     }
+  }
+
+  Future<Uri?> _droppedFileUri(DropItem item) {
+    final reader = item.dataReader;
+    if (reader == null) return Future.value(null);
+    final completer = Completer<Uri?>();
+    final progress = reader.getValue<Uri>(
+      Formats.fileUri,
+      (uri) => completer.complete(uri),
+      onError: (_) => completer.complete(null),
+    );
+    if (progress == null) completer.complete(null);
+    return completer.future;
   }
 
   void _showQrPage(File file) {
