@@ -1,5 +1,4 @@
 import 'package:blast_qr/color_scheme.dart';
-import 'package:blast_qr/model/encryption_mode.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +23,6 @@ class AppPreferences {
   static bool? _multipleQrCodes;
   static bool? _hasSeenMicPrompt;
   static bool? _alwaysCompressImages;
-  static EncryptionMode? _encryptionMode;
 
   static Locale? get locale => _localeId == null ? null : Locale(_localeId!);
   static ThemeMode get theme => _theme ?? ThemeMode.system;
@@ -43,8 +41,6 @@ class AppPreferences {
   static bool get multipleQrCodes => _multipleQrCodes ?? false;
   static bool get hasSeenMicPrompt => _hasSeenMicPrompt ?? false;
   static bool get alwaysCompressImages => _alwaysCompressImages ?? true;
-  static EncryptionMode get encryptionMode =>
-      _encryptionMode ?? EncryptionMode.ask;
 
   static Future<void> setLocale(String? localeId) async {
     if (localeId == null) {
@@ -141,12 +137,6 @@ class AppPreferences {
     _alwaysCompressImages = value;
   }
 
-  static Future<void> setEncryptionMode(EncryptionMode value) async {
-    SharedPreferences sp = await SharedPreferences.getInstance();
-    sp.setString('encryptionMode', value.name);
-    _encryptionMode = value;
-  }
-
   static Future<void> read() async {
     SharedPreferences sp = await SharedPreferences.getInstance();
     _localeId = sp.getString('locale_id');
@@ -171,9 +161,5 @@ class AppPreferences {
     _multipleQrCodes = sp.getBool('multipleQrCodes') ?? false;
     _hasSeenMicPrompt = sp.getBool('hasSeenMicPrompt') ?? false;
     _alwaysCompressImages = sp.getBool('alwaysCompressImages') ?? true;
-    _encryptionMode = EncryptionMode.values.asNameMap()[sp.getString(
-          'encryptionMode',
-        )] ??
-        EncryptionMode.ask;
   }
 }

@@ -399,49 +399,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This was sent with a newer version of blastQR. Update the app to receive it.';
 
   @override
-  String get privacy_section => 'Privacy';
-
-  @override
-  String get encryption => 'Encryption';
-
-  @override
-  String get encryption_ask => 'Ask every time';
-
-  @override
-  String get encryption_always => 'Always encrypt';
-
-  @override
-  String get encryption_never => 'Never encrypt';
-
-  @override
-  String get encryption_hint =>
-      'Encrypted files can only be opened with the password, even if someone films the QR codes.';
-
-  @override
-  String get encrypt_prompt_title => 'Send encrypted?';
-
-  @override
-  String get encrypt_prompt_msg =>
-      'The receiver needs this password. Say it or show it to them, but not to their camera.';
-
-  @override
-  String get password => 'Password';
-
-  @override
-  String get new_password => 'New password';
-
-  @override
-  String get edit_password => 'Edit password';
-
-  @override
-  String get send_encrypted => 'Send encrypted';
-
-  @override
-  String get send_unencrypted => 'Send without encryption';
-
-  @override
-  String get password_short_warning =>
-      'Short passwords can be guessed from a recording of the QR codes.';
+  String get send_encrypted => 'Send password-encrypted';
 
   @override
   String get receiving_encrypted => 'Receiving encrypted file...';
@@ -454,9 +412,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'This file is encrypted. Enter the password from the sender.';
 
   @override
-  String get password_entered => 'Password entered';
-
-  @override
   String get wrong_password => 'Wrong password. Try again.';
 
   @override
@@ -467,4 +422,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get show_password => 'Show password';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get new_password => 'New password';
+
+  @override
+  String get edit_password => 'Edit password';
+
+  @override
+  String get password_short_warning => 'Short passwords are not secure.';
+
+  @override
+  String get custom_password_title => 'Custom password';
+
+  @override
+  String get custom_password_msg =>
+      'The file will be encrypted with the following password.';
 }

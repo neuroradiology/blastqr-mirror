@@ -62,10 +62,6 @@ class _ScanPageState extends State<ScanPage> {
   DateTime _latestScanStartTime = DateTime.now();
   ReceivingFileMetadata? _fileMetadata;
 
-  /// Password typed for the current encrypted transfer (possibly while it's
-  /// still being scanned).
-  String? _transferPassword;
-
   /// Last password that worked, so a batch of files only needs it once.
   /// Kept in memory only.
   String? _sessionPassword;
@@ -203,11 +199,6 @@ class _ScanPageState extends State<ScanPage> {
                 .animate(target: _showLowSpeedWarning ? 1 : 0)
                 .fade(delay: 300.ms, begin: -0.5)
                 .moveY(delay: 300.ms),
-            if (_fileMetadata?.isEncrypted == true && !_loadingResult)
-              _EnterPasswordButton(
-                entered: _transferPassword != null,
-                onTap: _askPasswordWhileScanning,
-              ),
             ScanProgressWidget(
               chunkCount: _decodedChunkCount,
               speed: '${_speed.toStringAsFixed(1)}kB/s',
@@ -329,7 +320,6 @@ class _ScanPageState extends State<ScanPage> {
       isCompressed: frame.isCompressedData,
       isEncrypted: frame.isEncrypted,
     );
-    _transferPassword = null;
     setState(() {
       _isReceivingData = true;
       _statusMessage =
@@ -348,7 +338,6 @@ class _ScanPageState extends State<ScanPage> {
     debugPrint('Switching to a new transfer');
     _decoder.reset();
     _fileMetadata = null;
-    _transferPassword = null;
     _progress = 0;
     _decodedChunkCount = 0;
     _dataLengthInLastPeriod = 0;
@@ -408,7 +397,15 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
+    // Measured before decryption, so time spent typing the password doesn't
+    // count as transfer time.
+    final elapsedTime =
+        DateTime.now().difference(_latestScanStartTime).inMilliseconds / 1000;
+
     if (metadata.isEncrypted) {
+      // Everything has arrived: play the completion tone now rather than
+      // after the password, so the sender's microphone hears it right away.
+      _playTransferComplete();
       final Uint8List? plain;
       try {
         plain = await _decrypt(data);
@@ -425,9 +422,6 @@ class _ScanPageState extends State<ScanPage> {
       data = plain;
     }
     _loadingResult = false;
-
-    final elapsedTime =
-        DateTime.now().difference(_latestScanStartTime).inMilliseconds / 1000;
 
     final directory = await getApplicationDocumentsDirectory();
     final itemsDirectory = Directory('${directory.path}/docs');
@@ -460,12 +454,8 @@ class _ScanPageState extends State<ScanPage> {
     // Increment file badge
     Provider.of<FileBadgeCount>(context, listen: false).add();
 
-    if (_appSettings.hapticFeedback) {
-      HapticFeedback.heavyImpact();
-    }
-    if (_appSettings.soundFeedback) {
-      _soundService.playTransferComplete();
-    }
+    // Encrypted transfers already played it before asking for the password.
+    if (!metadata.isEncrypted) _playTransferComplete();
 
     _showResultSheet(
       fileWrapper,
@@ -484,43 +474,69 @@ class _ScanPageState extends State<ScanPage> {
     });
   }
 
-  /// Decrypts a received envelope. Tries the password typed during the
-  /// transfer, then the last one that worked, then asks until it's right.
+  /// Haptic + completion tone (which the sender may be listening for).
+  void _playTransferComplete() {
+    if (_appSettings.hapticFeedback) {
+      HapticFeedback.heavyImpact();
+    }
+    if (_appSettings.soundFeedback) {
+      _soundService.playTransferComplete();
+    }
+  }
+
+  /// Decrypts a received envelope. Tries the last password that worked (so a
+  /// batch only needs it once), then asks until it's right.
   /// Returns null if the user cancels. The received data is kept the whole
   /// time, so a wrong password never means scanning again. Throws if the
   /// data can't be decrypted with any password (damaged or unsupported).
   Future<Uint8List?> _decrypt(Uint8List envelope) async {
     final metadata = _fileMetadata;
-    final candidates = <String>{
-      if (_transferPassword != null) _transferPassword!,
-      if (_sessionPassword != null) _sessionPassword!,
-    };
+    final remembered = _sessionPassword;
+    if (remembered != null) {
+      final plain = await _tryDecrypt(envelope, remembered);
+      if (plain != null) return plain;
+    }
+    // A remembered password from an earlier transfer failing isn't the
+    // user's mistake, so the first prompt doesn't say "wrong password".
     var failed = false;
     var lastTried = '';
-    for (final password in candidates) {
-      final plain = await _tryDecrypt(envelope, password);
-      if (plain != null) return plain;
-      failed = true;
-      lastTried = password;
-    }
 
-    while (_fileMetadata == metadata) {
-      if (!mounted) return null;
-      setState(() => _loadingResult = false);
-      final password = await showPasswordSheet(
-        context,
-        initialText: failed ? lastTried : '',
-        wrongPassword: failed,
-      );
-      if (password == null || !mounted || _fileMetadata != metadata) {
-        return null;
+    // Nothing left to scan while asking, so turn the camera off.
+    _setCameraOn(false);
+    try {
+      while (_fileMetadata == metadata) {
+        if (!mounted) return null;
+        setState(() => _loadingResult = false);
+        final password = await showPasswordSheet(
+          context,
+          initialText: failed ? lastTried : '',
+          wrongPassword: failed,
+        );
+        if (password == null || !mounted || _fileMetadata != metadata) {
+          return null;
+        }
+        final plain = await _tryDecrypt(envelope, password);
+        if (plain != null) return plain;
+        failed = true;
+        lastTried = password;
       }
-      final plain = await _tryDecrypt(envelope, password);
-      if (plain != null) return plain;
-      failed = true;
-      lastTried = password;
+      return null;
+    } finally {
+      _setCameraOn(true);
     }
-    return null;
+  }
+
+  /// Removes or restores the camera preview. Removing the reader widget
+  /// releases the camera; a new controller arrives when it's shown again.
+  void _setCameraOn(bool on) {
+    if (!mounted) return;
+    setState(() {
+      _showsReaderWidget = on;
+      if (!on) {
+        _cameraController = null;
+        _focusLocked = false;
+      }
+    });
   }
 
   /// The plaintext, or null if [password] is wrong. Other errors are
@@ -534,18 +550,6 @@ class _ScanPageState extends State<ScanPage> {
     } on TransferCryptoError catch (error) {
       if (error == TransferCryptoError.wrongPassword) return null;
       rethrow;
-    }
-  }
-
-  /// Lets the user type the password while the transfer is still arriving.
-  Future<void> _askPasswordWhileScanning() async {
-    final metadata = _fileMetadata;
-    final password = await showPasswordSheet(
-      context,
-      initialText: _transferPassword ?? '',
-    );
-    if (password != null && mounted && _fileMetadata == metadata) {
-      setState(() => _transferPassword = password);
     }
   }
 
@@ -708,7 +712,6 @@ class _ScanPageState extends State<ScanPage> {
     _speed = 0;
     _decodedChunkCount = 0;
     _fileMetadata = null;
-    _transferPassword = null;
     _tracker.reset();
     _renameController.text = '';
     _showLowSpeedWarning = false;
@@ -779,42 +782,6 @@ class _ScanPageState extends State<ScanPage> {
       final snackBar = SnackBar(content: Text(error.toString()));
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
-  }
-}
-
-/// "Enter password" pill shown while an encrypted transfer is arriving.
-class _EnterPasswordButton extends StatelessWidget {
-  const _EnterPasswordButton({required this.entered, required this.onTap});
-
-  final bool entered;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).padding.bottom - 64 + 72 + 12,
-        ),
-        child: FilledButton.icon(
-          onPressed: onTap,
-          icon: HugeIcon(
-            icon:
-                entered
-                    ? HugeIcons.strokeRoundedCheckmarkCircle02
-                    : HugeIcons.strokeRoundedSquareLock02,
-            size: 18,
-            color: context.color.onPrimary,
-          ),
-          label: Text(
-            entered
-                ? context.l10n.password_entered
-                : context.l10n.enter_password,
-          ),
-        ),
-      ),
-    );
   }
 }
 

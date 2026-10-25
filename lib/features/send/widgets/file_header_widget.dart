@@ -1,5 +1,6 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:blast_qr/color_scheme.dart';
-import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -10,15 +11,19 @@ class FileHeaderWidget extends StatelessWidget {
     required this.file,
     required this.onTapDismiss,
     this.compressedSize,
-    this.password,
+    this.encrypted = false,
+    this.name,
   });
 
   final FileWrapper file;
   final VoidCallback onTapDismiss;
   final int? compressedSize;
 
-  /// Shown with a lock when the transfer is encrypted.
-  final String? password;
+  /// Blurs the thumbnail and shows a lock over it.
+  final bool encrypted;
+
+  /// Shown instead of the file's own name (e.g. renamed before sending).
+  final String? name;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +51,35 @@ class FileHeaderWidget extends StatelessWidget {
                   ],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: file.buildThumbnail(context, size: 72),
+                child:
+                    encrypted
+                        ? Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            ImageFiltered(
+                              imageFilter: ImageFilter.blur(
+                                sigmaX: 6,
+                                sigmaY: 6,
+                              ),
+                              child: file.buildThumbnail(context, size: 72),
+                            ),
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withAlpha(110),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const HugeIcon(
+                                  icon: HugeIcons.strokeRoundedSquareLock02,
+                                  size: 24,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                        : file.buildThumbnail(context, size: 72),
               ),
               Expanded(
                 child: Column(
@@ -56,7 +89,7 @@ class FileHeaderWidget extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(right: 36),
                       child: Text(
-                        file.name,
+                        name ?? file.name,
                         style: Theme.of(context).textTheme.titleMedium,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -77,7 +110,6 @@ class FileHeaderWidget extends StatelessWidget {
                       )
                     else
                       Text(file.sizeInkB),
-                    if (password != null) PasswordRow(password: password!),
                   ],
                 ),
               ),
@@ -102,55 +134,51 @@ class FileHeaderWidget extends StatelessWidget {
   }
 }
 
-/// Lock icon + password, with a button to hide it (e.g. while a camera that
-/// shouldn't see it is pointed at the screen).
-class PasswordRow extends StatefulWidget {
-  const PasswordRow({super.key, required this.password});
+/// Full-width button with the transfer password, masked until tapped (so a
+/// camera pointed at the screen can't catch it). Tapping again hides it.
+class PasswordButton extends StatefulWidget {
+  const PasswordButton({super.key, required this.password});
 
   final String password;
 
   @override
-  State<PasswordRow> createState() => _PasswordRowState();
+  State<PasswordButton> createState() => _PasswordButtonState();
 }
 
-class _PasswordRowState extends State<PasswordRow> {
-  bool _visible = true;
+class _PasswordButtonState extends State<PasswordButton> {
+  bool _visible = false;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      spacing: 6,
-      children: [
-        HugeIcon(
-          icon: HugeIcons.strokeRoundedSquareLock02,
-          size: 18,
-          color: context.color.onSurface,
-        ),
-        Flexible(
-          child: SelectableText(
-            _visible ? widget.password : '••••-••••-••••',
-            maxLines: 1,
-            style: passwordTextStyle(context),
+    return OutlinedButton(
+      onPressed: () => setState(() => _visible = !_visible),
+      child: Row(
+        spacing: 8,
+        children: [
+          HugeIcon(
+            icon: HugeIcons.strokeRoundedSquareLock02,
+            size: 20,
+            color: context.color.onSurface,
           ),
-        ),
-        SizedBox(
-          width: 32,
-          height: 32,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            tooltip: context.l10n.show_password,
-            onPressed: () => setState(() => _visible = !_visible),
-            icon: HugeIcon(
-              icon:
-                  _visible
-                      ? HugeIcons.strokeRoundedViewOff
-                      : HugeIcons.strokeRoundedView,
-              size: 18,
-              color: context.color.onSurface,
+          Expanded(
+            child: Text(
+              _visible ? widget.password : '••••-••••-••••',
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: passwordTextStyle(context),
             ),
           ),
-        ),
-      ],
+          HugeIcon(
+            icon:
+                _visible
+                    ? HugeIcons.strokeRoundedViewOff
+                    : HugeIcons.strokeRoundedView,
+            size: 20,
+            color: context.color.onSurface,
+          ),
+        ],
+      ),
     );
   }
 }

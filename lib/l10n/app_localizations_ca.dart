@@ -399,49 +399,7 @@ class AppLocalizationsCa extends AppLocalizations {
       'Això s\'ha enviat amb una versió més recent de blastQR. Actualitza l\'aplicació per rebre-ho.';
 
   @override
-  String get privacy_section => 'Privadesa';
-
-  @override
-  String get encryption => 'Xifratge';
-
-  @override
-  String get encryption_ask => 'Preguntar cada vegada';
-
-  @override
-  String get encryption_always => 'Xifrar sempre';
-
-  @override
-  String get encryption_never => 'No xifrar mai';
-
-  @override
-  String get encryption_hint =>
-      'Els fitxers xifrats només es poden obrir amb la contrasenya, encara que algú gravi els codis QR.';
-
-  @override
-  String get encrypt_prompt_title => 'Enviar xifrat?';
-
-  @override
-  String get encrypt_prompt_msg =>
-      'El receptor necessita aquesta contrasenya. Digues-la o ensenya-la, però no a la seva càmera.';
-
-  @override
-  String get password => 'Contrasenya';
-
-  @override
-  String get new_password => 'Nova contrasenya';
-
-  @override
-  String get edit_password => 'Editar la contrasenya';
-
-  @override
-  String get send_encrypted => 'Enviar xifrat';
-
-  @override
-  String get send_unencrypted => 'Enviar sense xifrar';
-
-  @override
-  String get password_short_warning =>
-      'Les contrasenyes curtes es poden endevinar a partir d\'una gravació dels codis QR.';
+  String get send_encrypted => 'Enviar xifrat amb contrasenya';
 
   @override
   String get receiving_encrypted => 'S\'està rebent un fitxer xifrat...';
@@ -454,9 +412,6 @@ class AppLocalizationsCa extends AppLocalizations {
       'Aquest fitxer està xifrat. Introdueix la contrasenya del remitent.';
 
   @override
-  String get password_entered => 'Contrasenya introduïda';
-
-  @override
   String get wrong_password => 'Contrasenya incorrecta. Torna-ho a provar.';
 
   @override
@@ -467,4 +422,24 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get show_password => 'Mostra la contrasenya';
+
+  @override
+  String get password => 'Contrasenya';
+
+  @override
+  String get new_password => 'Nova contrasenya';
+
+  @override
+  String get edit_password => 'Editar la contrasenya';
+
+  @override
+  String get password_short_warning =>
+      'Les contrasenyes curtes no són segures.';
+
+  @override
+  String get custom_password_title => 'Contrasenya personalitzada';
+
+  @override
+  String get custom_password_msg =>
+      'El fitxer es xifrarà amb la contrasenya següent.';
 }

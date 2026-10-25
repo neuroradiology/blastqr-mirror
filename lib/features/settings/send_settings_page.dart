@@ -5,7 +5,6 @@ import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/settings/image_compression_settings_page.dart';
 import 'package:blast_qr/features/settings/widgets/setting_group_title.dart';
 import 'package:blast_qr/l10n/extension.dart';
-import 'package:blast_qr/model/encryption_mode.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -120,20 +119,6 @@ class _SendSettingsPageState extends State<SendSettingsPage> {
               );
             },
           ),
-          SettingGroupTitle(title: context.l10n.privacy_section),
-          Consumer<AppSettings>(
-            builder: (context, state, child) {
-              return ListTile(
-                leading: HugeIcon(
-                  icon: HugeIcons.strokeRoundedSquareLock02,
-                  color: context.color.onSurface,
-                ),
-                title: Text(context.l10n.encryption),
-                subtitle: Text(state.encryptionMode.title(context)),
-                onTap: () => _showEncryptionModePicker(state.encryptionMode),
-              );
-            },
-          ),
           SettingGroupTitle(title: context.l10n.acoustic_feedback),
           Consumer<AppSettings>(
             builder: (context, state, child) {
@@ -210,27 +195,12 @@ class _SendSettingsPageState extends State<SendSettingsPage> {
         encodeSettings.updateMtu(AppPreferences.defaultMtu);
         encodeSettings.updatePlaybackFps(AppPreferences.defaultFps);
         encodeSettings.updateMultipleQrCodes(false);
-        Provider.of<AppSettings>(context, listen: false)
-          ..updateImageCompressionSettings(
-            ImageCompressionSettings.defaultSettings,
-          )
-          ..updateEncryptionMode(EncryptionMode.ask);
-      },
-    );
-  }
-
-  void _showEncryptionModePicker(EncryptionMode current) {
-    showPickerSheet(
-      context,
-      title: context.l10n.encryption,
-      message: context.l10n.encryption_hint,
-      items: [for (final mode in EncryptionMode.values) mode.title(context)],
-      selectedItemIndex: current.index,
-      onItemTap: (index) {
         Provider.of<AppSettings>(
           context,
           listen: false,
-        ).updateEncryptionMode(EncryptionMode.values[index]);
+        ).updateImageCompressionSettings(
+          ImageCompressionSettings.defaultSettings,
+        );
       },
     );
   }

@@ -399,49 +399,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto se ha enviado con una versión más reciente de blastQR. Actualiza la aplicación para recibirlo.';
 
   @override
-  String get privacy_section => 'Privacidad';
-
-  @override
-  String get encryption => 'Cifrado';
-
-  @override
-  String get encryption_ask => 'Preguntar cada vez';
-
-  @override
-  String get encryption_always => 'Cifrar siempre';
-
-  @override
-  String get encryption_never => 'No cifrar nunca';
-
-  @override
-  String get encryption_hint =>
-      'Los archivos cifrados solo se pueden abrir con la contraseña, aunque alguien grabe los códigos QR.';
-
-  @override
-  String get encrypt_prompt_title => '¿Enviar cifrado?';
-
-  @override
-  String get encrypt_prompt_msg =>
-      'El receptor necesita esta contraseña. Díselo o enséñasela, pero no a su cámara.';
-
-  @override
-  String get password => 'Contraseña';
-
-  @override
-  String get new_password => 'Nueva contraseña';
-
-  @override
-  String get edit_password => 'Editar contraseña';
-
-  @override
-  String get send_encrypted => 'Enviar cifrado';
-
-  @override
-  String get send_unencrypted => 'Enviar sin cifrar';
-
-  @override
-  String get password_short_warning =>
-      'Las contraseñas cortas se pueden adivinar a partir de una grabación de los códigos QR.';
+  String get send_encrypted => 'Enviar cifrado con contraseña';
 
   @override
   String get receiving_encrypted => 'Recibiendo archivo cifrado...';
@@ -454,9 +412,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Este archivo está cifrado. Introduce la contraseña del remitente.';
 
   @override
-  String get password_entered => 'Contraseña introducida';
-
-  @override
   String get wrong_password => 'Contraseña incorrecta. Inténtalo de nuevo.';
 
   @override
@@ -467,4 +422,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get show_password => 'Mostrar contraseña';
+
+  @override
+  String get password => 'Contraseña';
+
+  @override
+  String get new_password => 'Nueva contraseña';
+
+  @override
+  String get edit_password => 'Editar contraseña';
+
+  @override
+  String get password_short_warning => 'Las contraseñas cortas no son seguras.';
+
+  @override
+  String get custom_password_title => 'Contraseña personalizada';
+
+  @override
+  String get custom_password_msg =>
+      'El archivo se cifrará con la siguiente contraseña.';
 }

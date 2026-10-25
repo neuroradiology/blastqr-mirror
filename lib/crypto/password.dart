@@ -22,7 +22,7 @@ String generatePassword() {
   return formatPassword(code);
 }
 
-/// Shows a generated code in groups of 4 (`K7M2-QX9P-4RTA`). Other
+/// Shows a generated code in groups of 4 (`K7M2-QX9P-4RTA`). Custom
 /// passwords are returned unchanged.
 String formatPassword(String password) {
   final code = _asCode(password);
@@ -32,6 +32,9 @@ String formatPassword(String password) {
   ].join('-');
 }
 
+/// Whether [password] has the shape of a generated code.
+bool isGeneratedCode(String password) => _asCode(password) != null;
+
 /// The exact text the key is derived from. Both sender and receiver use it.
 ///
 /// A generated code can be typed loosely: any case, with or without dashes
@@ -39,9 +42,6 @@ String formatPassword(String password) {
 /// is only trimmed.
 String normalizePassword(String password) =>
     _asCode(password) ?? password.trim();
-
-/// Whether [password] has the shape of a generated code.
-bool isGeneratedCode(String password) => _asCode(password) != null;
 
 /// The canonical code (12 uppercase characters, no dashes), or null if
 /// [password] isn't shaped like a generated code.

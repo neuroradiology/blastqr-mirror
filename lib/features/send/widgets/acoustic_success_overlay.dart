@@ -1,4 +1,5 @@
 import 'package:blast_qr/color_scheme.dart';
+import 'package:blast_qr/features/send/widgets/file_header_widget.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -11,11 +12,16 @@ class AcousticSuccessOverlay extends StatefulWidget {
     required this.onKeepShowing,
     required this.onDone,
     this.onNextFile,
+    this.password,
   });
 
   final VoidCallback onKeepShowing;
   final VoidCallback onDone;
   final VoidCallback? onNextFile;
+
+  /// Set for encrypted transfers. The receiver may still need the password,
+  /// so there's no auto-dismiss countdown and the password can be shown.
+  final String? password;
 
   @override
   State<AcousticSuccessOverlay> createState() => _AcousticSuccessOverlayState();
@@ -24,10 +30,12 @@ class AcousticSuccessOverlay extends StatefulWidget {
 class _AcousticSuccessOverlayState extends State<AcousticSuccessOverlay>
     with SingleTickerProviderStateMixin {
   AnimationController? _countdown;
+  bool _passwordVisible = false;
 
   @override
   void initState() {
     super.initState();
+    if (widget.password != null) return;
     _countdown = AnimationController(
       vsync: this,
       duration: AcousticSuccessOverlay.countdownDuration,
@@ -72,7 +80,7 @@ class _AcousticSuccessOverlayState extends State<AcousticSuccessOverlay>
             ),
           ),
           if (_countdown != null) ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: AnimatedBuilder(
@@ -85,15 +93,48 @@ class _AcousticSuccessOverlayState extends State<AcousticSuccessOverlay>
                     ),
               ),
             ),
+            const SizedBox(height: 16),
           ],
-          const Spacer(),
-          ElevatedButton(
-            onPressed: () {
-              _countdown?.stop();
-              widget.onKeepShowing();
-            },
-            child: Text(context.l10n.keep_showing_qr),
-          ),
+          if (widget.password != null) ...[
+            const SizedBox(height: 24),
+            if (_passwordVisible) ...[
+              GestureDetector(
+                onTap: () => setState(() => _passwordVisible = false),
+                child: SelectableText(
+                  widget.password!,
+                  textAlign: TextAlign.center,
+                  style: passwordTextStyle(context, fontSize: 28),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ] else ...[
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _passwordVisible = true),
+                icon: HugeIcon(
+                  icon: HugeIcons.strokeRoundedSquareLock02,
+                  size: 18,
+                  color: context.color.onSurface,
+                ),
+                label: Text(context.l10n.show_password),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+          // Encrypted: no countdown; the page's own Done/Next button below
+          // closes it.
+          if (widget.password != null)
+            OutlinedButton(
+              onPressed: widget.onKeepShowing,
+              child: Text(context.l10n.keep_showing_qr),
+            )
+          else
+            ElevatedButton(
+              onPressed: () {
+                _countdown?.stop();
+                widget.onKeepShowing();
+              },
+              child: Text(context.l10n.keep_showing_qr),
+            ),
         ],
       ),
     );

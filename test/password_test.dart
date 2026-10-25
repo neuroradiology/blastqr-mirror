@@ -15,8 +15,9 @@ void main() {
       expect(passwords.length, 100);
     });
 
-    test('is recognised as a generated code', () {
-      expect(isGeneratedCode(generatePassword()), isTrue);
+    test('normalizes to its 12 characters without dashes', () {
+      final password = generatePassword();
+      expect(normalizePassword(password), password.replaceAll('-', ''));
     });
   });
 
@@ -47,12 +48,18 @@ void main() {
     });
   });
 
-  group('formatPassword', () {
-    test('groups a code in fours', () {
+  group('custom passwords', () {
+    test('generated codes are recognised, custom ones are not', () {
+      expect(isGeneratedCode(generatePassword()), isTrue);
+      expect(isGeneratedCode('k7m2 qx9p 4rta'), isTrue);
+      expect(isGeneratedCode('My Secret'), isFalse);
+    });
+
+    test('formatPassword groups a code in fours', () {
       expect(formatPassword('k7m2qx9p4rta'), 'K7M2-QX9P-4RTA');
     });
 
-    test('leaves custom passwords alone', () {
+    test('formatPassword leaves custom passwords alone', () {
       expect(formatPassword('My Secret'), 'My Secret');
     });
   });

@@ -385,47 +385,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '최신 버전의 blastQR로 보낸 파일입니다. 받으려면 앱을 업데이트하세요.';
 
   @override
-  String get privacy_section => '개인정보 보호';
-
-  @override
-  String get encryption => '암호화';
-
-  @override
-  String get encryption_ask => '매번 묻기';
-
-  @override
-  String get encryption_always => '항상 암호화';
-
-  @override
-  String get encryption_never => '암호화 안 함';
-
-  @override
-  String get encryption_hint => '암호화된 파일은 누군가 QR 코드를 촬영하더라도 비밀번호 없이는 열 수 없습니다.';
-
-  @override
-  String get encrypt_prompt_title => '암호화해서 보낼까요?';
-
-  @override
-  String get encrypt_prompt_msg =>
-      '받는 사람에게 이 비밀번호가 필요합니다. 말로 알려주거나 보여주세요. 단, 카메라에는 보여주지 마세요.';
-
-  @override
-  String get password => '비밀번호';
-
-  @override
-  String get new_password => '새 비밀번호';
-
-  @override
-  String get edit_password => '비밀번호 편집';
-
-  @override
-  String get send_encrypted => '암호화해서 보내기';
-
-  @override
-  String get send_unencrypted => '암호화 없이 보내기';
-
-  @override
-  String get password_short_warning => '짧은 비밀번호는 QR 코드 녹화 영상으로 추측될 수 있습니다.';
+  String get send_encrypted => '비밀번호로 암호화해서 보내기';
 
   @override
   String get receiving_encrypted => '암호화된 파일 수신 중...';
@@ -435,9 +395,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get enter_password_msg => '이 파일은 암호화되어 있습니다. 보낸 사람의 비밀번호를 입력하세요.';
-
-  @override
-  String get password_entered => '비밀번호 입력됨';
 
   @override
   String get wrong_password => '비밀번호가 틀렸습니다. 다시 시도하세요.';
@@ -450,4 +407,22 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get show_password => '비밀번호 보기';
+
+  @override
+  String get password => '비밀번호';
+
+  @override
+  String get new_password => '새 비밀번호';
+
+  @override
+  String get edit_password => '비밀번호 편집';
+
+  @override
+  String get password_short_warning => '짧은 비밀번호는 안전하지 않습니다.';
+
+  @override
+  String get custom_password_title => '사용자 지정 비밀번호';
+
+  @override
+  String get custom_password_msg => '파일이 다음 비밀번호로 암호화됩니다.';
 }

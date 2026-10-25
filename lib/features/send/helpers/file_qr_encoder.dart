@@ -13,6 +13,7 @@ import 'package:blast_qr/model/transfer_container.dart';
 import 'package:blast_qr/raptorq/raptorq_streaming_encoder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path/path.dart' as p;
 import 'package:qr/qr.dart';
 
 /// One rendered QR frame. [seq] is its position in the stream (0, 1, 2, ...).
@@ -225,7 +226,8 @@ class FileQrEncoder {
   const FileQrEncoder._();
 
   /// Prepares [file] for sending and starts an endless frame stream. With a
-  /// [password], the transfer is encrypted.
+  /// [password], the transfer is encrypted. [fileName] replaces the name the
+  /// receiver gets.
   ///
   /// The caller must [QrFrameSource.dispose] the result.
   static Future<QrFrameSource> start(
@@ -233,11 +235,13 @@ class FileQrEncoder {
     int mtu, {
     ImageCompressionSettings? icSettings,
     String? password,
+    String? fileName,
     void Function(int)? onCompressedSize,
   }) async {
     var bytes = await file.file.readAsBytes();
     var gzipped = !file.type.isPrecompressed;
     var fileExtension = file.type.extension;
+    var reencoded = false;
 
     // Image compression. The settings can be passed for any file (e.g. with
     // "always compress images"), so only images are re-encoded, and only a
@@ -248,11 +252,20 @@ class FileQrEncoder {
         bytes = compressedImage;
         gzipped = false;
         fileExtension = icSettings.outputFormat.extension ?? fileExtension;
+        reencoded = true;
       }
     }
 
+    // A renamed file keeps the name as typed, except that a re-encoded image
+    // still takes the output format's extension.
+    final sentName = switch (fileName) {
+      null => '${file.nameWithoutExtension}.$fileExtension',
+      _ when reencoded => '${p.basenameWithoutExtension(fileName)}.$fileExtension',
+      _ => fileName,
+    };
+
     final transfer = await buildTransferObject(
-      fileName: '${file.nameWithoutExtension}.$fileExtension',
+      fileName: sentName,
       content: bytes,
       tryGzip: gzipped,
       password: password,

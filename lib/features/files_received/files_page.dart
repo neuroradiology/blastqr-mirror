@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/send/qr_page.dart';
-import 'package:blast_qr/features/send/widgets/encryption_sheet.dart';
+import 'package:blast_qr/features/send/send_options.dart';
+import 'package:blast_qr/features/send/widgets/custom_password_sheet.dart';
 import 'package:blast_qr/features/settings/settings_page.dart';
 import 'package:blast_qr/file_badge_count.dart';
 import 'package:blast_qr/file_name_utils.dart';
@@ -11,6 +12,7 @@ import 'package:blast_qr/model/file_extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/widgets/blast_chip.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
+import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:blast_qr/widgets/logo_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -414,38 +416,10 @@ class _FilesPageState extends State<FilesPage> {
       title: context.l10n.file_options,
       body: Column(
         children: [
-          GestureDetector(
-            onTap: () {
-              _onTapOpen(file);
-            },
-            child: Container(
-              width: 92,
-              height: 92,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(60),
-                    spreadRadius: 0,
-                    blurRadius: 1,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: file.buildThumbnail(context, size: 92),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: Text(file.name, textAlign: TextAlign.center),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            dateString,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: context.color.secondary),
+          FilePreview(
+            file: file,
+            detail: dateString,
+            onTapThumbnail: () => _onTapOpen(file),
           ),
           const SizedBox(height: 8),
           ListTile(
@@ -482,18 +456,23 @@ class _FilesPageState extends State<FilesPage> {
             ),
             title: Text(context.l10n.rename),
           ),
-          ListTile(
-            dense: true,
+          SendTile(
             onTap: () {
               Navigator.of(context).pop();
-              _onTapSend(file);
+              _onTapSend(file, plainSend);
             },
-            title: Text(context.l10n.send),
-
-            leading: HugeIcon(
-              icon: HugeIcons.strokeRoundedQrCode,
-              color: context.color.primary,
-            ),
+          ),
+          SendEncryptedTile(
+            onTap: () {
+              Navigator.of(context).pop();
+              _onTapSend(file, encryptedSend());
+            },
+            onLongPress: () async {
+              Navigator.of(context).pop();
+              final password = await showCustomPasswordSheet(context);
+              if (password == null || !mounted) return;
+              _onTapSend(file, (password: password, fileName: null));
+            },
           ),
           ListTile(
             dense: true,
@@ -523,14 +502,13 @@ class _FilesPageState extends State<FilesPage> {
     }
   }
 
-  void _onTapSend(FileWrapper file) async {
-    final encryption = await chooseSendEncryption(context);
-    if (encryption == null || !mounted) return;
+  /// The Files tab offers both options explicitly, so it doesn't ask again.
+  void _onTapSend(FileWrapper file, SendOptions options) {
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (context) {
-          return QrPage(file: file, password: encryption.password);
+          return QrPage(file: file, password: options.password);
         },
       ),
     );
@@ -543,17 +521,23 @@ class _FilesPageState extends State<FilesPage> {
       title: context.l10n.selected_options,
       body: Column(
         children: [
-          ListTile(
-            dense: true,
+          SendTile(
             onTap: () {
               Navigator.of(context).pop();
-              _sendSelectedFiles(files);
+              _sendSelectedFiles(files, plainSend);
             },
-            leading: HugeIcon(
-              icon: HugeIcons.strokeRoundedQrCode,
-              color: context.color.primary,
-            ),
-            title: Text(context.l10n.send),
+          ),
+          SendEncryptedTile(
+            onTap: () {
+              Navigator.of(context).pop();
+              _sendSelectedFiles(files, encryptedSend());
+            },
+            onLongPress: () async {
+              Navigator.of(context).pop();
+              final password = await showCustomPasswordSheet(context);
+              if (password == null || !mounted) return;
+              _sendSelectedFiles(files, (password: password, fileName: null));
+            },
           ),
           if (Platform.isAndroid)
             ListTile(
@@ -586,13 +570,11 @@ class _FilesPageState extends State<FilesPage> {
     );
   }
 
-  void _sendSelectedFiles(List<FileWrapper> files) async {
+  /// One password for the whole batch.
+  void _sendSelectedFiles(List<FileWrapper> files, SendOptions options) {
     _exitSelectionMode();
-    // One choice (and one password) for the whole batch.
-    final encryption = await chooseSendEncryption(context);
-    if (encryption == null || !mounted) return;
     Navigator.of(context).push(
-      _qrRouteForIndex(files, 0, encryption.password),
+      _qrRouteForIndex(files, 0, options.password),
     );
   }
 

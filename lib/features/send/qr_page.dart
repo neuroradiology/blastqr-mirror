@@ -17,13 +17,22 @@ import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 class QrPage extends StatefulWidget {
-  const QrPage({super.key, required this.file, this.onNext, this.password});
+  const QrPage({
+    super.key,
+    required this.file,
+    this.onNext,
+    this.password,
+    this.fileName,
+  });
 
   final FileWrapper file;
   final VoidCallback? onNext;
 
   /// Encrypts the transfer with this password when set.
   final String? password;
+
+  /// Name the receiver gets, if renamed before sending.
+  final String? fileName;
 
   @override
   State<QrPage> createState() => _QrPageState();
@@ -42,6 +51,10 @@ class _QrPageState extends State<QrPage> {
   StreamSubscription<void>? _acousticSub;
   Timer? _listenerDelayTimer;
   bool _completionDetected = false;
+
+  /// Most of the frames needed have been shown, so the receiver will soon
+  /// need the password.
+  bool _nearlyComplete = false;
 
   @override
   void initState() {
@@ -83,9 +96,10 @@ class _QrPageState extends State<QrPage> {
             if (!_fullscreenMode)
               FileHeaderWidget(
                 file: widget.file,
+                name: widget.fileName,
                 onTapDismiss: _dismiss,
                 compressedSize: _compressedSize,
-                password: widget.password,
+                encrypted: widget.password != null,
               ),
             Expanded(
               key: const ValueKey('qr_container'),
@@ -138,8 +152,13 @@ class _QrPageState extends State<QrPage> {
                                                   .imageCompressionSettings
                                               : null,
                                       password: widget.password,
+                                      fileName: widget.fileName,
                                       fill: _fullscreenMode,
                                       onTap: _onToggleFullscreen,
+                                      onNearlyComplete:
+                                          () => setState(
+                                            () => _nearlyComplete = true,
+                                          ),
                                       onStart:
                                           (size) => _onStart(
                                             size,
@@ -161,6 +180,7 @@ class _QrPageState extends State<QrPage> {
                             onKeepShowing: _onKeepShowingQr,
                             onDone: _dismiss,
                             onNextFile: widget.onNext,
+                            password: widget.password,
                           ),
                         ),
                       ),
@@ -191,6 +211,16 @@ class _QrPageState extends State<QrPage> {
                     ],
                   ),
                 ),
+              ),
+            // Shown once the transfer is nearly done; the completion overlay
+            // has its own "Show password" button, so it's hidden there.
+            if (!_fullscreenMode &&
+                widget.password != null &&
+                _nearlyComplete &&
+                !_completionDetected)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: PasswordButton(password: widget.password!),
               ),
             if (!_fullscreenMode)
               Padding(

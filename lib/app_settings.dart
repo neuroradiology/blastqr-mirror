@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:blast_qr/app_preferences.dart';
-import 'package:blast_qr/model/encryption_mode.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +18,6 @@ class AppSettings extends ChangeNotifier {
   bool acousticDetection;
   bool hasSeenMicPrompt;
   bool alwaysCompressImages;
-  EncryptionMode encryptionMode;
 
   AppSettings()
     : locale = AppPreferences.locale,
@@ -33,8 +31,7 @@ class AppSettings extends ChangeNotifier {
       soundFeedback = AppPreferences.soundFeedback,
       acousticDetection = AppPreferences.acousticDetection,
       hasSeenMicPrompt = AppPreferences.hasSeenMicPrompt,
-      alwaysCompressImages = AppPreferences.alwaysCompressImages,
-      encryptionMode = AppPreferences.encryptionMode;
+      alwaysCompressImages = AppPreferences.alwaysCompressImages;
 
   void updateLocale(String? localeId) {
     log('Setting locale to $localeId');
@@ -106,12 +103,6 @@ class AppSettings extends ChangeNotifier {
   void updateAlwaysCompressImages(bool value) {
     AppPreferences.setAlwaysCompressImages(value);
     alwaysCompressImages = value;
-    notifyListeners();
-  }
-
-  void updateEncryptionMode(EncryptionMode value) {
-    AppPreferences.setEncryptionMode(value);
-    encryptionMode = value;
     notifyListeners();
   }
 }

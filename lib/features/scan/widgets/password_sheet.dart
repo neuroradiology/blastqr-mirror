@@ -72,10 +72,13 @@ class _PasswordSheetState extends State<_PasswordSheet> {
           controller: _controller,
           hintText: 'XXXX-XXXX-XXXX',
           autofocus: true,
+          // Hidden as it's typed (the last character shows briefly), with
+          // the field's eye button to reveal it.
+          obscureText: true,
           keyboardType: TextInputType.visiblePassword,
           textInputAction: TextInputAction.done,
           textAlign: TextAlign.center,
-          style: passwordTextStyle(context, fontSize: 24),
+          style: passwordTextStyle(context, fontSize: 16),
           onSubmitted: (_) => _submit(),
         ),
         if (widget.wrongPassword)
