@@ -31,6 +31,15 @@ class SendPage extends StatefulWidget {
 
 class _SendPageState extends State<SendPage> {
   final List<FileWrapper> _recentFiles = [];
+  bool _dropRegionReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _dropRegionReady = true);
+    });
+  }
 
   void _addRecentFile(FileWrapper fw) {
     setState(() {
@@ -38,6 +47,32 @@ class _SendPageState extends State<SendPage> {
       _recentFiles.insert(0, fw);
       if (_recentFiles.length > 5) _recentFiles.removeLast();
     });
+  }
+
+  /// The drop region is created after the first frame: on macOS,
+  /// irondash_engine_context only registers the Flutter view asynchronously
+  /// and crashes if a drop region asks for it earlier.
+  Widget _dropRegion({required Widget child}) {
+    if (!_dropRegionReady) return child;
+    return DropRegion(
+      // Formats this region can accept.
+      formats: Formats.standardFormats,
+      hitTestBehavior: HitTestBehavior.opaque,
+      onDropOver: (event) {
+        return DropOperation.copy;
+      },
+      onPerformDrop: (event) async {
+        final uris = await Future.wait(
+          event.session.items.map((item) => _droppedFileUri(item)),
+        );
+        final files = [
+          for (final uri in uris)
+            if (uri != null) File(uri.toFilePath()),
+        ];
+        if (files.isNotEmpty && mounted) _showQrPages(files);
+      },
+      child: child,
+    );
   }
 
   @override
@@ -69,23 +104,7 @@ class _SendPageState extends State<SendPage> {
           ),
         ],
       ),
-      body: DropRegion(
-        // Formats this region can accept.
-        formats: Formats.standardFormats,
-        hitTestBehavior: HitTestBehavior.opaque,
-        onDropOver: (event) {
-          return DropOperation.copy;
-        },
-        onPerformDrop: (event) async {
-          final uris = await Future.wait(
-            event.session.items.map((item) => _droppedFileUri(item)),
-          );
-          final files = [
-            for (final uri in uris)
-              if (uri != null) File(uri.toFilePath()),
-          ];
-          if (files.isNotEmpty && mounted) _showQrPages(files);
-        },
+      body: _dropRegion(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
