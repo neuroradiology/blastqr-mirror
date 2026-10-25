@@ -416,7 +416,7 @@ class _FilesPageState extends State<FilesPage> {
       title: context.l10n.file_options,
       body: Column(
         children: [
-          FilePreview(
+          _FilePreview(
             file: file,
             detail: dateString,
             onTapThumbnail: () => _onTapOpen(file),
@@ -742,5 +742,40 @@ class _FilesPageState extends State<FilesPage> {
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
       }
     }
+  }
+}
+
+class _FilePreview extends StatelessWidget {
+  const _FilePreview({
+    required this.file,
+    required this.detail,
+    this.onTapThumbnail,
+  });
+
+  final FileWrapper file;
+  final String detail;
+  final VoidCallback? onTapThumbnail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onTapThumbnail,
+          child: FileThumbnail(file: file, size: 92),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: Text(file.name, textAlign: TextAlign.center),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          detail,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.color.secondary),
+        ),
+      ],
+    );
   }
 }

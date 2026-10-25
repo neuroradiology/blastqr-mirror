@@ -177,9 +177,7 @@ class _RaptorQrStreamingWidgetState extends State<RaptorQrStreamingWidget>
       oldWidget.controller.removeListener(_onControllerTick);
       widget.controller.addListener(_onControllerTick);
     }
-    if (oldWidget.file != widget.file ||
-        oldWidget.password != widget.password ||
-        oldWidget.fileName != widget.fileName) {
+    if (oldWidget.file != widget.file) {
       init();
     }
     if (oldWidget.fps != widget.fps) {

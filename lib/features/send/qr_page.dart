@@ -10,6 +10,7 @@ import 'package:blast_qr/features/send/widgets/file_too_large_alert_widget.dart'
 import 'package:blast_qr/features/send/widgets/raptorq_qr_streaming_widget.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
+import 'package:blast_qr/widgets/password_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -51,6 +52,12 @@ class _QrPageState extends State<QrPage> {
   bool _completionDetected = false;
 
   bool _nearlyComplete = false;
+
+  bool get _showsPasswordButton =>
+      !_fullscreenMode &&
+      widget.password != null &&
+      _nearlyComplete &&
+      !_completionDetected;
 
   @override
   void initState() {
@@ -184,7 +191,9 @@ class _QrPageState extends State<QrPage> {
                 ),
               ),
             ),
-            if (!_fullscreenMode && (!_isLargeFile || _largeFileAcknowledged))
+            if (!_fullscreenMode &&
+                !_showsPasswordButton &&
+                (!_isLargeFile || _largeFileAcknowledged))
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: GestureDetector(
@@ -208,10 +217,7 @@ class _QrPageState extends State<QrPage> {
                   ),
                 ),
               ),
-            if (!_fullscreenMode &&
-                widget.password != null &&
-                _nearlyComplete &&
-                !_completionDetected)
+            if (_showsPasswordButton)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: PasswordButton(password: widget.password!),

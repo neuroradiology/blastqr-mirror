@@ -1,6 +1,6 @@
 import 'package:blast_qr/color_scheme.dart';
-import 'package:blast_qr/features/send/widgets/file_header_widget.dart';
 import 'package:blast_qr/l10n/extension.dart';
+import 'package:blast_qr/widgets/password_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 

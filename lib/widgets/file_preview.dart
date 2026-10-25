@@ -2,42 +2,6 @@ import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:flutter/material.dart';
 
-class FilePreview extends StatelessWidget {
-  const FilePreview({
-    super.key,
-    required this.file,
-    required this.detail,
-    this.onTapThumbnail,
-  });
-
-  final FileWrapper file;
-  final String detail;
-  final VoidCallback? onTapThumbnail;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: onTapThumbnail,
-          child: FileThumbnail(file: file, size: 92),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-          child: Text(file.name, textAlign: TextAlign.center),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          detail,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: context.color.secondary),
-        ),
-      ],
-    );
-  }
-}
-
 class FilesPreview extends StatelessWidget {
   const FilesPreview({super.key, required this.files, this.maxShown = 4});
 

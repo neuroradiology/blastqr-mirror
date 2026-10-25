@@ -6,8 +6,6 @@ import 'package:blastqr_crypto/blastqr_crypto.dart';
 export 'package:blastqr_crypto/blastqr_crypto.dart' show TransferCryptoError;
 
 abstract final class TransferCrypto {
-  static int get overhead => envelopeOverhead();
-
   static Future<Uint8List> encrypt(Uint8List plain, String password) =>
       encryptTransfer(plain: plain, password: normalizePassword(password));
 

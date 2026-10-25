@@ -15,7 +15,8 @@ import 'package:blast_qr/features/send/helpers/file_qr_encoder.dart';
 import 'package:blast_qr/model/blast_qrcode_data.dart';
 import 'package:blast_qr/raptorq/raptorq_decoder.dart';
 import 'package:blast_qr/raptorq/raptorq_streaming_encoder.dart';
-import 'package:blastqr_crypto/blastqr_crypto.dart' show BlastqrCrypto;
+import 'package:blastqr_crypto/blastqr_crypto.dart'
+    show BlastqrCrypto, envelopeOverhead;
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:raptorq_flutter/src/rust/frb_generated.dart';
@@ -298,9 +299,9 @@ void main() {
       );
       expect(
         encrypted.bytes.length,
-        plain.bytes.length + TransferCrypto.overhead,
+        plain.bytes.length + envelopeOverhead(),
       );
-      expect(TransferCrypto.overhead, 52);
+      expect(envelopeOverhead(), 52);
     }, skip: _skip);
   });
 }
