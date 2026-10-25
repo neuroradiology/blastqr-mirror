@@ -4,7 +4,7 @@ import 'package:blast_qr/acoustic_ack_listener.dart';
 import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/help/help_page.dart';
-import 'package:blast_qr/features/send/qr_page.dart';
+import 'package:blast_qr/features/send/send_files.dart';
 import 'package:blast_qr/features/send/send_options.dart';
 import 'package:blast_qr/features/settings/settings_page.dart';
 import 'package:blast_qr/l10n/extension.dart';
@@ -222,23 +222,6 @@ class _SendPageState extends State<SendPage> {
     _showQrPages([file]);
   }
 
-  void _showFileTooLarge(String message) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text(context.l10n.file_too_large),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.l10n.ok),
-              ),
-            ],
-          ),
-    );
-  }
-
   void _showQrPages(List<File> files) async {
     final fileWrappers = await Future.wait(files.map((f) => f.toFileWrapper()));
     if (!mounted) return;
@@ -247,7 +230,7 @@ class _SendPageState extends State<SendPage> {
     final symbolSize = BlastQrcodeData.symbolSizeForMtu(mtu);
     for (final fileWrapper in fileWrappers) {
       if (fileWrapper.size > BlastQrcodeData.maxFileBytes) {
-        _showFileTooLarge(context.l10n.file_too_large_msg);
+        showFileTooLarge(context, context.l10n.file_too_large_msg);
         return;
       }
       // Receivers reject transfers with too many symbols, which only happens
@@ -255,7 +238,7 @@ class _SendPageState extends State<SendPage> {
       final transferLength =
           fileWrapper.size + BlastQrcodeData.maxMetadataBytes;
       if (!BlastQrcodeData.fitsSymbolLimit(transferLength, symbolSize)) {
-        _showFileTooLarge(context.l10n.file_too_large_for_qr_size_msg);
+        showFileTooLarge(context, context.l10n.file_too_large_for_qr_size_msg);
         return;
       }
     }
@@ -263,9 +246,7 @@ class _SendPageState extends State<SendPage> {
     final options = await chooseSendOptions(context, fileWrappers);
     if (options == null || !mounted) return;
 
-    await Navigator.of(
-      context,
-    ).push(_qrRouteForIndex(fileWrappers, 0, options));
+    await sendFiles(context, fileWrappers, options);
     if (mounted) {
       for (final fw in fileWrappers) {
         _addRecentFile(fw);
@@ -275,29 +256,6 @@ class _SendPageState extends State<SendPage> {
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) await _maybeShowMicPrompt();
     }
-  }
-
-  Route<void> _qrRouteForIndex(
-    List<FileWrapper> fileWrappers,
-    int index,
-    SendOptions options,
-  ) {
-    final isLast = index == fileWrappers.length - 1;
-    return MaterialPageRoute(
-      fullscreenDialog: true,
-      builder:
-          (context) => QrPage(
-            file: fileWrappers[index],
-            password: options.password,
-            fileName: fileWrappers.length == 1 ? options.fileName : null,
-            onNext:
-                isLast
-                    ? null
-                    : () => Navigator.of(context).pushReplacement(
-                      _qrRouteForIndex(fileWrappers, index + 1, options),
-                    ),
-          ),
-    );
   }
 
   Future<void> _maybeShowMicPrompt() async {
