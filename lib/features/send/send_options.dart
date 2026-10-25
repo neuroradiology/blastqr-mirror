@@ -9,20 +9,14 @@ import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-/// How a send should go. [password] is null for a plain send. [fileName] is
-/// the name the receiver gets, or null to keep the file's own name.
 typedef SendOptions = ({String? password, String? fileName});
 
-/// A plain send.
 const SendOptions plainSend = (password: null, fileName: null);
 
-/// An encrypted send with a new generated password.
 SendOptions encryptedSend({String? fileName}) =>
     (password: generatePassword(), fileName: fileName);
 
-/// Asks how the next send of [files] (one file or a batch) goes: Send or
-/// Send password-encrypted (long press to choose the password), and renaming
-/// a single file. Returns null if the user cancelled the send.
+/// Returns null if the user cancelled the send.
 Future<SendOptions?> chooseSendOptions(
   BuildContext context,
   List<FileWrapper> files,
@@ -35,15 +29,12 @@ Future<SendOptions?> chooseSendOptions(
   if (result == null) return null;
   if (!result.customPassword) return result.options;
 
-  // The Send sheet is closed by now; cancelling this one cancels the send.
   if (!context.mounted) return null;
   final password = await showCustomPasswordSheet(context);
   if (password == null) return null;
   return (password: password, fileName: result.options.fileName);
 }
 
-/// What the Send sheet closed with. [customPassword] means the user long
-/// pressed "Send password-encrypted" and wants to choose the password next.
 typedef _SendSheetResult = ({SendOptions options, bool customPassword});
 
 class _SendSheet extends StatefulWidget {
@@ -66,7 +57,6 @@ class _SendSheetState extends State<_SendSheet> {
     super.dispose();
   }
 
-  /// The new name, or null if it's unchanged (or only a batch is sent).
   String? get _fileName {
     if (widget.files.length != 1) return null;
     final original = widget.files.first.name;
@@ -89,7 +79,6 @@ class _SendSheetState extends State<_SendSheet> {
       children: [
         if (widget.files.length == 1) ...[
           FileThumbnail(file: file, size: 92),
-          // Same rename field as the receiver's result sheet.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: TextField(
@@ -106,7 +95,6 @@ class _SendSheetState extends State<_SendSheet> {
                 contentPadding: const EdgeInsets.fromLTRB(48, 0, 0, 8),
               ),
               onTap: () {
-                // Select the name without its extension.
                 final dotIndex = _nameController.text.lastIndexOf('.');
                 _nameController.selection = TextSelection(
                   baseOffset: 0,
@@ -130,7 +118,6 @@ class _SendSheetState extends State<_SendSheet> {
         ),
         SendEncryptedTile(
           onTap: () => _close(encryptedSend(fileName: _fileName)),
-          // Closes this sheet; chooseSendOptions then opens the password one.
           onLongPress:
               () => _close(
                 (password: null, fileName: _fileName),
@@ -143,7 +130,6 @@ class _SendSheetState extends State<_SendSheet> {
   }
 }
 
-/// "Send" option, as in the Files tab sheets.
 class SendTile extends StatelessWidget {
   const SendTile({super.key, required this.onTap});
 
@@ -163,8 +149,6 @@ class SendTile extends StatelessWidget {
   }
 }
 
-/// "Send password-encrypted" option. The password is generated and shown on
-/// the QR page. A long press (hidden option) lets the user pick it.
 class SendEncryptedTile extends StatelessWidget {
   const SendEncryptedTile({super.key, required this.onTap, this.onLongPress});
 

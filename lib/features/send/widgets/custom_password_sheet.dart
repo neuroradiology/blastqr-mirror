@@ -7,8 +7,6 @@ import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-/// Lets the sender pick the password: starts with a generated one that can
-/// be regenerated or edited. Returns the password, or null if cancelled.
 Future<String?> showCustomPasswordSheet(BuildContext context) {
   return showSheet<String>(
     context: context,
@@ -104,7 +102,6 @@ class _CustomPasswordSheetState extends State<_CustomPasswordSheet> {
                           color: context.color.surfaceContainer,
                           border: Border.all(color: context.color.outline),
                         ),
-                        // Shrinks to fit narrow screens next to the icons.
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
@@ -116,7 +113,6 @@ class _CustomPasswordSheetState extends State<_CustomPasswordSheet> {
                       ),
             ),
 
-            // Tooltips show the labels on long press.
             if (!_editing)
               IconButton(
                 onPressed: _edit,

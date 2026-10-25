@@ -5,8 +5,6 @@ import 'package:blast_qr/widgets/blast_text_field.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:flutter/material.dart';
 
-/// Asks for the password of an encrypted transfer. Returns null if dismissed.
-/// [wrongPassword] shows that the last attempt failed.
 Future<String?> showPasswordSheet(
   BuildContext context, {
   String initialText = '',
@@ -72,8 +70,6 @@ class _PasswordSheetState extends State<_PasswordSheet> {
           controller: _controller,
           hintText: 'XXXX-XXXX-XXXX',
           autofocus: true,
-          // Hidden as it's typed (the last character shows briefly), with
-          // the field's eye button to reveal it.
           obscureText: true,
           keyboardType: TextInputType.visiblePassword,
           textInputAction: TextInputAction.done,

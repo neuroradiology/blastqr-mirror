@@ -404,16 +404,8 @@ since the screen stays at a fixed distance and is bright.
 
 If the transfer is encrypted, it's decrypted first:
 
-1. The password is only asked once the whole file has arrived. The
-   completion tone (5) plays right away, before any prompt.
-2. The app first tries the last password that worked this session (memory
-   only, never saved), so a batch needs the password once.
-3. Otherwise it asks, with the camera preview turned off. The field hides
-   what's typed (the last character shows briefly). A wrong password shows
-   "Wrong password" and asks again,
-   **keeping the received data**, so there's no need to scan again.
-   Cancelling discards it.
-4. A damaged envelope or out-of-range key settings → "The file could not be
+1. The password is only asked once the whole file has arrived.
+2. A damaged envelope or out-of-range key settings → "The file could not be
    saved…".
 
 `writeReceivedFile` then runs in a background isolate:
@@ -451,8 +443,10 @@ scanner resets.
 
 The one back-channel. When a transfer finishes, the receiver plays
 **880 Hz for 250 ms, then 1320 Hz for 250 ms**, if its sound feedback is on.
-For a plain file it plays once the file is saved; for an encrypted file it
-plays as soon as all the data has arrived, before the password is asked.
+It plays as soon as all the data has arrived, before the file is saved
+(and, for an encrypted file, before the password is asked). So it means "you
+can stop showing the codes", not "saved": if saving fails afterwards, the
+receiver shows an error but the sender has already seen "Transfer complete!".
 
 When the sender detects it, it shows "Transfer complete!". For a plain file
 it moves on (next file, or closes) after a 3 s countdown. For an encrypted

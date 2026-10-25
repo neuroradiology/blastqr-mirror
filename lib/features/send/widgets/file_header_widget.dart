@@ -19,10 +19,8 @@ class FileHeaderWidget extends StatelessWidget {
   final VoidCallback onTapDismiss;
   final int? compressedSize;
 
-  /// Blurs the thumbnail and shows a lock over it.
   final bool encrypted;
 
-  /// Shown instead of the file's own name (e.g. renamed before sending).
   final String? name;
 
   @override
@@ -134,8 +132,6 @@ class FileHeaderWidget extends StatelessWidget {
   }
 }
 
-/// Full-width button with the transfer password, masked until tapped (so a
-/// camera pointed at the screen can't catch it). Tapping again hides it.
 class PasswordButton extends StatefulWidget {
   const PasswordButton({super.key, required this.password});
 
@@ -183,7 +179,6 @@ class _PasswordButtonState extends State<PasswordButton> {
   }
 }
 
-/// Monospace, so similar characters are easy to tell apart.
 TextStyle? passwordTextStyle(BuildContext context, {double fontSize = 18}) {
   return Theme.of(context).textTheme.titleMedium?.copyWith(
     fontFamily: 'monospace',

@@ -225,9 +225,7 @@ Uint8List buildFrameHeader({
 class FileQrEncoder {
   const FileQrEncoder._();
 
-  /// Prepares [file] for sending and starts an endless frame stream. With a
-  /// [password], the transfer is encrypted. [fileName] replaces the name the
-  /// receiver gets.
+  /// Prepares [file] for sending and starts an endless frame stream.
   ///
   /// The caller must [QrFrameSource.dispose] the result.
   static Future<QrFrameSource> start(

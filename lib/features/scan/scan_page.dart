@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/crypto/transfer_crypto.dart';
-import 'package:blast_qr/file_badge_count.dart';
 import 'package:blast_qr/features/scan/received_file_writer.dart';
 import 'package:blast_qr/features/scan/transfer_tracker.dart';
 import 'package:blast_qr/features/scan/widgets/password_sheet.dart';
+import 'package:blast_qr/file_badge_count.dart';
 import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/blast_qrcode_data.dart';
@@ -61,10 +61,6 @@ class _ScanPageState extends State<ScanPage> {
   late AppSettings _appSettings;
   DateTime _latestScanStartTime = DateTime.now();
   ReceivingFileMetadata? _fileMetadata;
-
-  /// Last password that worked, so a batch of files only needs it once.
-  /// Kept in memory only.
-  String? _sessionPassword;
 
   /// Decides which transfer the scanned frames belong to.
   final _tracker = TransferTracker();
@@ -397,15 +393,13 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
-    // Measured before decryption, so time spent typing the password doesn't
-    // count as transfer time.
     final elapsedTime =
         DateTime.now().difference(_latestScanStartTime).inMilliseconds / 1000;
 
+    // Everything has arrived: play the completion tone now
+    _playTransferComplete();
+
     if (metadata.isEncrypted) {
-      // Everything has arrived: play the completion tone now rather than
-      // after the password, so the sender's microphone hears it right away.
-      _playTransferComplete();
       final Uint8List? plain;
       try {
         plain = await _decrypt(data);
@@ -414,7 +408,6 @@ class _ScanPageState extends State<ScanPage> {
         _showReceiveFailed();
         return;
       }
-      // Cancelled, or the transfer was reset while asking.
       if (plain == null || !mounted || _fileMetadata != metadata) {
         if (mounted && _fileMetadata == metadata) _reset();
         return;
@@ -451,11 +444,7 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
-    // Increment file badge
     Provider.of<FileBadgeCount>(context, listen: false).add();
-
-    // Encrypted transfers already played it before asking for the password.
-    if (!metadata.isEncrypted) _playTransferComplete();
 
     _showResultSheet(
       fileWrapper,
@@ -474,7 +463,6 @@ class _ScanPageState extends State<ScanPage> {
     });
   }
 
-  /// Haptic + completion tone (which the sender may be listening for).
   void _playTransferComplete() {
     if (_appSettings.hapticFeedback) {
       HapticFeedback.heavyImpact();
@@ -484,24 +472,14 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
-  /// Decrypts a received envelope. Tries the last password that worked (so a
-  /// batch only needs it once), then asks until it's right.
-  /// Returns null if the user cancels. The received data is kept the whole
-  /// time, so a wrong password never means scanning again. Throws if the
-  /// data can't be decrypted with any password (damaged or unsupported).
+  /// Asks until the password is right, keeping the received data, so a wrong
+  /// password never means scanning again. Returns null if cancelled; throws
+  /// if the data is damaged or unsupported.
   Future<Uint8List?> _decrypt(Uint8List envelope) async {
     final metadata = _fileMetadata;
-    final remembered = _sessionPassword;
-    if (remembered != null) {
-      final plain = await _tryDecrypt(envelope, remembered);
-      if (plain != null) return plain;
-    }
-    // A remembered password from an earlier transfer failing isn't the
-    // user's mistake, so the first prompt doesn't say "wrong password".
     var failed = false;
     var lastTried = '';
 
-    // Nothing left to scan while asking, so turn the camera off.
     _setCameraOn(false);
     try {
       while (_fileMetadata == metadata) {
@@ -526,8 +504,6 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
-  /// Removes or restores the camera preview. Removing the reader widget
-  /// releases the camera; a new controller arrives when it's shown again.
   void _setCameraOn(bool on) {
     if (!mounted) return;
     setState(() {
@@ -539,14 +515,11 @@ class _ScanPageState extends State<ScanPage> {
     });
   }
 
-  /// The plaintext, or null if [password] is wrong. Other errors are
-  /// rethrown.
+  /// Null if [password] is wrong; other errors are rethrown.
   Future<Uint8List?> _tryDecrypt(Uint8List envelope, String password) async {
     setState(() => _loadingResult = true);
     try {
-      final plain = await TransferCrypto.decrypt(envelope, password);
-      _sessionPassword = password;
-      return plain;
+      return await TransferCrypto.decrypt(envelope, password);
     } on TransferCryptoError catch (error) {
       if (error == TransferCryptoError.wrongPassword) return null;
       rethrow;

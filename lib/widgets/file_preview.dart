@@ -2,8 +2,6 @@ import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:flutter/material.dart';
 
-/// Thumbnail, name and a detail line (e.g. date or size), as shown at the
-/// top of the file sheets.
 class FilePreview extends StatelessWidget {
   const FilePreview({
     super.key,
@@ -40,7 +38,6 @@ class FilePreview extends StatelessWidget {
   }
 }
 
-/// Up to [maxShown] small thumbnails in a row, with "+N" for the rest.
 class FilesPreview extends StatelessWidget {
   const FilesPreview({super.key, required this.files, this.maxShown = 4});
 
@@ -68,7 +65,6 @@ class FilesPreview extends StatelessWidget {
   }
 }
 
-/// A file's thumbnail with rounded corners and a soft shadow.
 class FileThumbnail extends StatelessWidget {
   const FileThumbnail({super.key, required this.file, required this.size});
 

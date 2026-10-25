@@ -259,7 +259,6 @@ class _SendPageState extends State<SendPage> {
       }
     }
 
-    // One choice (and one password) for the whole batch.
     final options = await chooseSendOptions(context, fileWrappers);
     if (options == null || !mounted) return;
 
@@ -289,7 +288,6 @@ class _SendPageState extends State<SendPage> {
           (context) => QrPage(
             file: fileWrappers[index],
             password: options.password,
-            // Renaming is only offered for a single file.
             fileName: fileWrappers.length == 1 ? options.fileName : null,
             onNext:
                 isLast

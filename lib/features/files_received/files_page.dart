@@ -502,7 +502,6 @@ class _FilesPageState extends State<FilesPage> {
     }
   }
 
-  /// The Files tab offers both options explicitly, so it doesn't ask again.
   void _onTapSend(FileWrapper file, SendOptions options) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -570,7 +569,6 @@ class _FilesPageState extends State<FilesPage> {
     );
   }
 
-  /// One password for the whole batch.
   void _sendSelectedFiles(List<FileWrapper> files, SendOptions options) {
     _exitSelectionMode();
     Navigator.of(context).push(

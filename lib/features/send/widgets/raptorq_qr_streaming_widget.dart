@@ -85,10 +85,8 @@ class RaptorQrStreamingWidget extends StatefulWidget {
   final int fps;
   final ImageCompressionSettings? imageCompressionSettings;
 
-  /// Encrypts the transfer with this password when set.
   final String? password;
 
-  /// Name the receiver gets, if renamed before sending.
   final String? fileName;
   final bool fill;
   final Function()? onTap;
@@ -143,8 +141,6 @@ class _RaptorQrStreamingWidgetState extends State<RaptorQrStreamingWidget>
   /// order, so every frame on screen is one the receiver hasn't seen yet.
   int _nextSeq = 0;
 
-  /// Whether [RaptorQrStreamingWidget.onNearlyComplete] has fired for the
-  /// current stream.
   bool _nearlyCompleteReported = false;
 
   /// What each grid cell shows, and how many times the controller has told

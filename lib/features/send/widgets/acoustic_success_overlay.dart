@@ -19,8 +19,6 @@ class AcousticSuccessOverlay extends StatefulWidget {
   final VoidCallback onDone;
   final VoidCallback? onNextFile;
 
-  /// Set for encrypted transfers. The receiver may still need the password,
-  /// so there's no auto-dismiss countdown and the password can be shown.
   final String? password;
 
   @override
@@ -120,8 +118,6 @@ class _AcousticSuccessOverlayState extends State<AcousticSuccessOverlay>
               const SizedBox(height: 8),
             ],
           ],
-          // Encrypted: no countdown; the page's own Done/Next button below
-          // closes it.
           if (widget.password != null)
             OutlinedButton(
               onPressed: widget.onKeepShowing,

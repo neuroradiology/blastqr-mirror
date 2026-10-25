@@ -28,10 +28,8 @@ class QrPage extends StatefulWidget {
   final FileWrapper file;
   final VoidCallback? onNext;
 
-  /// Encrypts the transfer with this password when set.
   final String? password;
 
-  /// Name the receiver gets, if renamed before sending.
   final String? fileName;
 
   @override
@@ -52,8 +50,6 @@ class _QrPageState extends State<QrPage> {
   Timer? _listenerDelayTimer;
   bool _completionDetected = false;
 
-  /// Most of the frames needed have been shown, so the receiver will soon
-  /// need the password.
   bool _nearlyComplete = false;
 
   @override
@@ -212,8 +208,6 @@ class _QrPageState extends State<QrPage> {
                   ),
                 ),
               ),
-            // Shown once the transfer is nearly done; the completion overlay
-            // has its own "Show password" button, so it's hidden there.
             if (!_fullscreenMode &&
                 widget.password != null &&
                 _nearlyComplete &&
