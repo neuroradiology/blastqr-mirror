@@ -10,9 +10,9 @@ import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
-import 'package:blast_qr/widgets/app_bar_action.dart';
 import 'package:blast_qr/widgets/blast_chip.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
+import 'package:blast_qr/widgets/circle_button.dart';
 import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:blast_qr/widgets/logo_widget.dart';
 import 'package:flutter/material.dart';
@@ -256,12 +256,12 @@ class _FilesPageState extends State<FilesPage> {
         backgroundColor: Colors.transparent,
         actions: [
           if (_isSelecting)
-            AppBarAction(
+            CircleButton(
               icon: const Icon(Icons.more_horiz),
               onPressed: _showMultiSelectSheet,
             )
           else
-            AppBarAction(
+            CircleButton(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -373,7 +373,7 @@ class _FilesPageState extends State<FilesPage> {
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: file.buildThumbnail(context, size: 56),
                           ),
@@ -385,7 +385,7 @@ class _FilesPageState extends State<FilesPage> {
                                   color: isSelected
                                       ? context.color.primary.withAlpha(180)
                                       : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: isSelected
                                     ? const Icon(

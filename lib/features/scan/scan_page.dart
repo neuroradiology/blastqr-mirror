@@ -19,10 +19,11 @@ import 'package:blast_qr/nav_bar_visibility.dart';
 import 'package:blast_qr/raptorq/raptorq_decoder.dart';
 import 'package:blast_qr/sound_feedback.dart';
 import 'package:blast_qr/theme.dart';
-import 'package:blast_qr/widgets/app_bar_action.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
+import 'package:blast_qr/widgets/circle_button.dart';
 import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:blast_qr/widgets/logo_widget.dart';
+import 'package:blast_qr/widgets/strike_painter.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -108,17 +109,18 @@ class _ScanPageState extends State<ScanPage> {
           toolbarHeight: 80,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Colors.transparent,
-          leadingWidth: 112,
+          leadingWidth: 104,
           leading: Row(
             children: [
-              AppBarAction(
+              CircleButton(
+                padding: const EdgeInsets.only(left: 8),
                 onPressed: () {
                   appSettings.updateHapticFeedback(!appSettings.hapticFeedback);
                 },
                 icon: CustomPaint(
                   foregroundPainter: appSettings.hapticFeedback
                       ? null
-                      : _StrikePainter(
+                      : StrikePainter(
                           color: darkColors.onPrimaryContainer.withValues(
                             alpha: 0.5,
                           ),
@@ -132,7 +134,8 @@ class _ScanPageState extends State<ScanPage> {
                   ),
                 ),
               ),
-              AppBarAction(
+              CircleButton(
+                padding: EdgeInsets.zero,
                 onPressed: () {
                   appSettings.updateSoundFeedback(!appSettings.soundFeedback);
                 },
@@ -148,7 +151,7 @@ class _ScanPageState extends State<ScanPage> {
             ],
           ),
           actions: [
-            AppBarAction(
+            CircleButton(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -263,7 +266,6 @@ class _ScanPageState extends State<ScanPage> {
                   height: 80,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
                     color: Theme.of(context).colorScheme.surface,
                   ),
                   child: const CircularProgressIndicator.adaptive(),
@@ -984,37 +986,4 @@ class ScanProgressWidget extends StatelessWidget {
       ],
     );
   }
-}
-
-class _StrikePainter extends CustomPainter {
-  const _StrikePainter({required this.color, required this.gapColor});
-
-  final Color color;
-  final Color gapColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const inset = 2.0;
-    final start = const Offset(inset, inset);
-    final end = Offset(size.width - inset, size.height - inset);
-    final paint = Paint()..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      start,
-      end,
-      paint
-        ..color = gapColor
-        ..strokeWidth = 4.5,
-    );
-    canvas.drawLine(
-      start,
-      end,
-      paint
-        ..color = color
-        ..strokeWidth = 1.5,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_StrikePainter old) =>
-      old.color != color || old.gapColor != gapColor;
 }
