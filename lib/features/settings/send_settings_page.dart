@@ -6,6 +6,7 @@ import 'package:blast_qr/features/settings/image_compression_settings_page.dart'
 import 'package:blast_qr/features/settings/widgets/setting_group_title.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
+import 'package:blast_qr/widgets/app_bar_action.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -25,7 +26,7 @@ class _SendSettingsPageState extends State<SendSettingsPage> {
       appBar: AppBar(
         title: Text(context.l10n.sending_settings),
         actions: [
-          IconButton(
+          AppBarAction(
             onPressed: _restoreDefaults,
             icon: const HugeIcon(icon: HugeIcons.strokeRoundedUndo),
           ),

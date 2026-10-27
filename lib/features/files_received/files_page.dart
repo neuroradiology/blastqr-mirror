@@ -10,6 +10,7 @@ import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
+import 'package:blast_qr/widgets/app_bar_action.dart';
 import 'package:blast_qr/widgets/blast_chip.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:blast_qr/widgets/file_preview.dart';
@@ -255,12 +256,12 @@ class _FilesPageState extends State<FilesPage> {
         backgroundColor: Colors.transparent,
         actions: [
           if (_isSelecting)
-            IconButton(
+            AppBarAction(
               icon: const Icon(Icons.more_horiz),
               onPressed: _showMultiSelectSheet,
             )
           else
-            IconButton(
+            AppBarAction(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -270,10 +271,7 @@ class _FilesPageState extends State<FilesPage> {
                   ),
                 );
               },
-              icon: HugeIcon(
-                icon: HugeIcons.strokeRoundedSettings01,
-                color: context.color.onSurface,
-              ),
+              icon: const HugeIcon(icon: HugeIcons.strokeRoundedSettings01),
             ),
         ],
         // The chips row tucks 12px under the bar, so fade over those 12px.

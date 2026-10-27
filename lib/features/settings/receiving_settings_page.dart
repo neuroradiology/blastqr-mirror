@@ -5,6 +5,7 @@ import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/extensions/string_extension.dart';
 import 'package:blast_qr/features/settings/widgets/setting_group_title.dart';
 import 'package:blast_qr/l10n/extension.dart';
+import 'package:blast_qr/widgets/app_bar_action.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ class _ReceivingSettingsPageState extends State<ReceivingSettingsPage> {
       appBar: AppBar(
         title: Text(context.l10n.receiving_settings),
         actions: [
-          IconButton(
+          AppBarAction(
             onPressed: _restoreDefaults,
             icon: const HugeIcon(icon: HugeIcons.strokeRoundedUndo),
           ),

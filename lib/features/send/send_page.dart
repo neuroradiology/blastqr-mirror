@@ -13,6 +13,7 @@ import 'package:blast_qr/model/blast_qrcode_data.dart';
 import 'package:blast_qr/model/file_extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/platform_support.dart';
+import 'package:blast_qr/widgets/app_bar_action.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:blast_qr/widgets/logo_widget.dart';
 import 'package:file_selector/file_selector.dart';
@@ -87,7 +88,7 @@ class _SendPageState extends State<SendPage> {
         surfaceTintColor: Colors.transparent,
         backgroundColor: Colors.transparent,
         actions: [
-          IconButton(
+          AppBarAction(
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -97,10 +98,7 @@ class _SendPageState extends State<SendPage> {
                 ),
               );
             },
-            icon: HugeIcon(
-              icon: HugeIcons.strokeRoundedSettings01,
-              color: context.color.onSurface,
-            ),
+            icon: const HugeIcon(icon: HugeIcons.strokeRoundedSettings01),
           ),
         ],
       ),

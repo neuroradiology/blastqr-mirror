@@ -7,6 +7,7 @@ import 'package:blast_qr/crypto/transfer_crypto.dart';
 import 'package:blast_qr/features/scan/received_file_writer.dart';
 import 'package:blast_qr/features/scan/transfer_tracker.dart';
 import 'package:blast_qr/features/scan/widgets/password_sheet.dart';
+import 'package:blast_qr/features/settings/settings_page.dart';
 import 'package:blast_qr/file_badge_count.dart';
 import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
@@ -18,6 +19,7 @@ import 'package:blast_qr/nav_bar_visibility.dart';
 import 'package:blast_qr/raptorq/raptorq_decoder.dart';
 import 'package:blast_qr/sound_feedback.dart';
 import 'package:blast_qr/theme.dart';
+import 'package:blast_qr/widgets/app_bar_action.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:blast_qr/widgets/logo_widget.dart';
@@ -106,30 +108,57 @@ class _ScanPageState extends State<ScanPage> {
           toolbarHeight: 80,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Colors.transparent,
+          leadingWidth: 112,
+          leading: Row(
+            children: [
+              AppBarAction(
+                onPressed: () {
+                  appSettings.updateHapticFeedback(!appSettings.hapticFeedback);
+                },
+                icon: CustomPaint(
+                  foregroundPainter: appSettings.hapticFeedback
+                      ? null
+                      : _StrikePainter(
+                          color: darkColors.onPrimaryContainer.withValues(
+                            alpha: 0.5,
+                          ),
+                          gapColor: darkColors.primaryContainer,
+                        ),
+                  child: HugeIcon(
+                    icon: HugeIcons.strokeRoundedSmartPhone03,
+                    color: appSettings.hapticFeedback
+                        ? darkColors.onPrimaryContainer
+                        : darkColors.onPrimaryContainer.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+              AppBarAction(
+                onPressed: () {
+                  appSettings.updateSoundFeedback(!appSettings.soundFeedback);
+                },
+                icon: HugeIcon(
+                  icon: appSettings.soundFeedback
+                      ? HugeIcons.strokeRoundedVolumeLow
+                      : HugeIcons.strokeRoundedVolumeOff,
+                  color: appSettings.soundFeedback
+                      ? darkColors.onPrimaryContainer
+                      : darkColors.onPrimaryContainer.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
           actions: [
-            IconButton(
+            AppBarAction(
               onPressed: () {
-                appSettings.updateHapticFeedback(!appSettings.hapticFeedback);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return const SettingsPage();
+                    },
+                  ),
+                );
               },
-              icon: HugeIcon(
-                icon: HugeIcons.strokeRoundedSmartPhone03,
-                color: appSettings.hapticFeedback
-                    ? darkColors.onSurface
-                    : darkColors.outline,
-              ),
-            ),
-            IconButton(
-              onPressed: () {
-                appSettings.updateSoundFeedback(!appSettings.soundFeedback);
-              },
-              icon: HugeIcon(
-                icon: appSettings.soundFeedback
-                    ? HugeIcons.strokeRoundedVolumeLow
-                    : HugeIcons.strokeRoundedVolumeOff,
-                color: appSettings.soundFeedback
-                    ? darkColors.onSurface
-                    : darkColors.outline,
-              ),
+              icon: const HugeIcon(icon: HugeIcons.strokeRoundedSettings01),
             ),
           ],
         ),
@@ -955,4 +984,37 @@ class ScanProgressWidget extends StatelessWidget {
       ],
     );
   }
+}
+
+class _StrikePainter extends CustomPainter {
+  const _StrikePainter({required this.color, required this.gapColor});
+
+  final Color color;
+  final Color gapColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const inset = 2.0;
+    final start = const Offset(inset, inset);
+    final end = Offset(size.width - inset, size.height - inset);
+    final paint = Paint()..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      start,
+      end,
+      paint
+        ..color = gapColor
+        ..strokeWidth = 4.5,
+    );
+    canvas.drawLine(
+      start,
+      end,
+      paint
+        ..color = color
+        ..strokeWidth = 1.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StrikePainter old) =>
+      old.color != color || old.gapColor != gapColor;
 }
