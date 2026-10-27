@@ -953,6 +953,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sending {count} files'**
   String sending_files_count(int count);
+
+  /// No description provided for @camera_60fps.
+  ///
+  /// In en, this message translates to:
+  /// **'60 FPS camera'**
+  String get camera_60fps;
+
+  /// No description provided for @camera_60fps_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental. May not work on every device.'**
+  String get camera_60fps_hint;
+
+  /// No description provided for @debug.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug'**
+  String get debug;
+
+  /// No description provided for @camera_zoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera zoom'**
+  String get camera_zoom;
+
+  /// No description provided for @camera_zoom_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Zooming in lets the camera read codes from further away, where it can still focus. Helps on phones that can\'t focus up close.'**
+  String get camera_zoom_hint;
 }
 
 class _AppLocalizationsDelegate

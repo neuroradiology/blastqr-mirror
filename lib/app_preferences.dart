@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
 import 'package:camera/camera.dart';
@@ -8,6 +10,10 @@ class AppPreferences {
   static int defaultMtu = 2935;
   static int defaultFps = 20;
 
+  /// iPhones can't focus closer than about 15 cm; zooming in fills the frame
+  /// with the code from a distance they can focus at.
+  static double get defaultCameraZoom => Platform.isIOS ? 1.25 : 1.0;
+
   static String? _localeId;
   static ThemeMode? _theme;
   static int? _mtu;
@@ -17,6 +23,10 @@ class AppPreferences {
   static Color? _accentColor;
   static ImageCompressionSettings? _imageCompressionSettings;
   static ResolutionPreset? _cameraResolution;
+  static bool? _camera60Fps;
+  static double? _cameraZoom;
+  static bool? _debugVideoHdr;
+  static double? _debugExposureMs;
   static bool? _hapticFeedback;
   static bool? _soundFeedback;
   static bool? _acousticDetection;
@@ -35,6 +45,10 @@ class AppPreferences {
       _imageCompressionSettings ?? ImageCompressionSettings.defaultSettings;
   static ResolutionPreset get cameraResolution =>
       _cameraResolution ?? ResolutionPreset.high;
+  static bool get camera60Fps => _camera60Fps ?? false;
+  static double get cameraZoom => _cameraZoom ?? defaultCameraZoom;
+  static bool get debugVideoHdr => _debugVideoHdr ?? false;
+  static double? get debugExposureMs => _debugExposureMs;
   static bool get hapticFeedback => _hapticFeedback ?? false;
   static bool get soundFeedback => _soundFeedback ?? true;
   static bool get acousticDetection => _acousticDetection ?? false;
@@ -98,7 +112,35 @@ class AppPreferences {
   static Future<void> setCameraResolution(ResolutionPreset resolution) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
     sp.setInt('camera_resolution', resolution.index);
-    _cameraResolution = cameraResolution;
+    _cameraResolution = resolution;
+  }
+
+  static Future<void> setCamera60Fps(bool value) async {
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    sp.setBool('camera60Fps', value);
+    _camera60Fps = value;
+  }
+
+  static Future<void> setCameraZoom(double value) async {
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    sp.setDouble('cameraZoom', value);
+    _cameraZoom = value;
+  }
+
+  static Future<void> setDebugVideoHdr(bool value) async {
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    sp.setBool('debugVideoHdr', value);
+    _debugVideoHdr = value;
+  }
+
+  static Future<void> setDebugExposureMs(double? value) async {
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    if (value == null) {
+      sp.remove('debugExposure');
+    } else {
+      sp.setDouble('debugExposure', value);
+    }
+    _debugExposureMs = value;
   }
 
   static Future<void> setHapticFeedback(bool value) async {
@@ -155,6 +197,10 @@ class AppPreferences {
         sp.getInt('camera_resolution') != null
             ? ResolutionPreset.values[sp.getInt('camera_resolution')!]
             : ResolutionPreset.high;
+    _camera60Fps = sp.getBool('camera60Fps') ?? false;
+    _cameraZoom = sp.getDouble('cameraZoom') ?? defaultCameraZoom;
+    _debugVideoHdr = sp.getBool('debugVideoHdr') ?? false;
+    _debugExposureMs = sp.getDouble('debugExposure');
     _hapticFeedback = sp.getBool('hapticFeedback') ?? false;
     _soundFeedback = sp.getBool('soundFeedback') ?? true;
     _acousticDetection = sp.getBool('acousticDetection') ?? false;

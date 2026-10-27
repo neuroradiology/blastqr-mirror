@@ -472,4 +472,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String sending_files_count(int count) {
     return 'Sending $count files';
   }
+
+  @override
+  String get camera_60fps => '60 FPS camera';
+
+  @override
+  String get camera_60fps_hint => 'Experimental. May not work on every device.';
+
+  @override
+  String get debug => 'Debug';
+
+  @override
+  String get camera_zoom => 'Camera zoom';
+
+  @override
+  String get camera_zoom_hint =>
+      'Zooming in lets the camera read codes from further away, where it can still focus. Helps on phones that can\'t focus up close.';
 }

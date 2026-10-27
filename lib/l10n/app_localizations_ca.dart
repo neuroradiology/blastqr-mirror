@@ -473,4 +473,21 @@ class AppLocalizationsCa extends AppLocalizations {
   String sending_files_count(int count) {
     return 'Enviant $count fitxers';
   }
+
+  @override
+  String get camera_60fps => 'Càmera a 60 FPS';
+
+  @override
+  String get camera_60fps_hint =>
+      'Experimental. Pot no funcionar a tots els dispositius.';
+
+  @override
+  String get debug => 'Depuració';
+
+  @override
+  String get camera_zoom => 'Zoom de la càmera';
+
+  @override
+  String get camera_zoom_hint =>
+      'Fer zoom permet llegir els codis des de més lluny, on la càmera encara pot enfocar. Ajuda en mòbils que no enfoquen de prop.';
 }

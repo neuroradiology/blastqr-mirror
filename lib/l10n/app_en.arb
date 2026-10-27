@@ -161,5 +161,10 @@
         "type": "int"
       }
     }
-  }
+  },
+  "camera_60fps": "60 FPS camera",
+  "camera_60fps_hint": "Experimental. May not work on every device.",
+  "debug": "Debug",
+  "camera_zoom": "Camera zoom",
+  "camera_zoom_hint": "Zooming in lets the camera read codes from further away, where it can still focus. Helps on phones that can't focus up close."
 }

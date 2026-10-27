@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:blast_qr/app_preferences.dart';
 import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/extensions/string_extension.dart';
@@ -18,6 +19,11 @@ class ReceivingSettingsPage extends StatefulWidget {
   @override
   State<ReceivingSettingsPage> createState() => _ReceivingSettingsPageState();
 }
+
+const _zoomLevels = [1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0];
+
+String _zoomLabel(double zoom) =>
+    '${zoom == zoom.roundToDouble() ? zoom.toInt() : zoom}×';
 
 class _ReceivingSettingsPageState extends State<ReceivingSettingsPage> {
   @override
@@ -74,6 +80,49 @@ class _ReceivingSettingsPageState extends State<ReceivingSettingsPage> {
                 );
               },
             ),
+            if (Platform.isIOS || Platform.isAndroid)
+              Consumer<AppSettings>(
+                builder: (context, state, child) {
+                  return ListTile(
+                    leading: HugeIcon(
+                      icon: HugeIcons.strokeRoundedZoomInArea,
+                      color: context.color.onSurface,
+                    ),
+                    title: Text(context.l10n.camera_zoom),
+                    subtitle: Text(_zoomLabel(state.cameraZoom)),
+                    onTap: () {
+                      showPickerSheet(
+                        context,
+                        selectedItemIndex: _zoomLevels.indexOf(
+                          state.cameraZoom,
+                        ),
+                        title: context.l10n.camera_zoom,
+                        message: context.l10n.camera_zoom_hint,
+                        items: _zoomLevels.map(_zoomLabel).toList(),
+                        onItemTap: (index) {
+                          state.updateCameraZoom(_zoomLevels[index]);
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            if (Platform.isIOS || Platform.isAndroid)
+              Consumer<AppSettings>(
+                builder: (context, state, child) {
+                  return SwitchListTile.adaptive(
+                    value: state.camera60Fps,
+                    onChanged: state.updateCamera60Fps,
+                    secondary: HugeIcon(
+                      icon: HugeIcons.strokeRoundedDashboardSpeed02,
+                      color: context.color.onSurface,
+                    ),
+                    title: Text(context.l10n.camera_60fps),
+                    subtitle: Text(context.l10n.camera_60fps_hint),
+                    activeTrackColor: context.color.primary,
+                  );
+                },
+              ),
           ],
           SettingGroupTitle(title: context.l10n.feedback),
           Consumer<AppSettings>(
@@ -139,6 +188,8 @@ class _ReceivingSettingsPageState extends State<ReceivingSettingsPage> {
       onConfirmTap: () {
         final appSettings = Provider.of<AppSettings>(context, listen: false);
         appSettings.updateCameraResolution(ResolutionPreset.high);
+        appSettings.updateCamera60Fps(false);
+        appSettings.updateCameraZoom(AppPreferences.defaultCameraZoom);
         appSettings.updateHapticFeedback(false);
         appSettings.updateSoundFeedback(true);
       },

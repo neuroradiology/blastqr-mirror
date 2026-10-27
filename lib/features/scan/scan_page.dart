@@ -4,7 +4,10 @@ import 'dart:io';
 import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/crypto/transfer_crypto.dart';
+import 'package:blast_qr/extensions/string_extension.dart';
+import 'package:blast_qr/features/scan/decode_stats.dart';
 import 'package:blast_qr/features/scan/received_file_writer.dart';
+import 'package:blast_qr/features/scan/scan_camera.dart';
 import 'package:blast_qr/features/scan/transfer_tracker.dart';
 import 'package:blast_qr/features/scan/widgets/password_sheet.dart';
 import 'package:blast_qr/features/settings/settings_page.dart';
@@ -87,12 +90,27 @@ class _ScanPageState extends State<ScanPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _appSettings = Provider.of<AppSettings>(context, listen: true);
+    DecodeStats.instance.camera = [
+      _cameraResolution.name.capitalize(),
+      '${_cameraFps ?? 'default'} FPS',
+      '${_appSettings.cameraZoom}× zoom',
+      if (Platform.isIOS) ...[
+        _appSettings.debugVideoHdr ? 'HDR on' : 'HDR off',
+        switch (_appSettings.debugExposureMs) {
+          null => 'max ${ScanCamera.defaultMaxExposureMs} ms exposure',
+          0 => 'no exposure limit',
+          final ms => '$ms ms exposure',
+        },
+      ],
+    ].join(', ');
+    _configureCamera();
   }
 
   @override
   void dispose() {
     _speedTimer?.cancel();
     _decoder.dispose();
+    DecodeStats.instance.endTransfer();
     _soundService.dispose();
     super.dispose();
   }
@@ -194,11 +212,10 @@ class _ScanPageState extends State<ScanPage> {
                           onMultiScan: _handleMultiscan,
                           onScan: _handleScan,
                           onControllerCreated: _onCameraControllerCreated,
-                          // camera_desktop fails above low on Linux:
-                          // https://github.com/hugocornellier/camera_desktop/issues/8
-                          resolution: Platform.isLinux
-                              ? ResolutionPreset.low
-                              : appSettings.cameraResolution,
+                          onFrame: DecodeStats.instance.record,
+                          resolution: _cameraResolution,
+                          fps: _cameraFps,
+                          initialZoom: appSettings.cameraZoom,
                         ),
                       ),
                     )
@@ -347,6 +364,8 @@ class _ScanPageState extends State<ScanPage> {
 
   void _handleMultiscan(Codes codes) {
     codes.codes.forEach(_handleScan);
+    // After handling, so the codes that start a transfer count towards it.
+    DecodeStats.instance.recordCodesRead(codes.codes.length);
   }
 
   void _handleScan(Code result) {
@@ -383,6 +402,7 @@ class _ScanPageState extends State<ScanPage> {
 
   /// Sets up a new transfer from its first frame and decodes that frame.
   void _startTransfer(BlastQrcodeData frame) {
+    DecodeStats.instance.startTransfer(frame.transferLength);
     // The decoder locks onto this frame's transfer synchronously, so the
     // metadata below always describes the transfer being decoded.
     _decoder.decodeChunk(frame);
@@ -429,6 +449,7 @@ class _ScanPageState extends State<ScanPage> {
   }
 
   void _handleDecodeProgress(int chunkLen, int chunkCount, double progress) {
+    DecodeStats.instance.recordNewCode(chunkLen);
     setState(() {
       _progress = progress;
       _dataLengthInLastPeriod += chunkLen;
@@ -466,6 +487,7 @@ class _ScanPageState extends State<ScanPage> {
     if (metadata == null) {
       return;
     }
+    DecodeStats.instance.completeTransfer();
 
     final elapsedTime =
         DateTime.now().difference(_latestScanStartTime).inMilliseconds / 1000;
@@ -771,6 +793,7 @@ class _ScanPageState extends State<ScanPage> {
   }
 
   void _reset() async {
+    DecodeStats.instance.endTransfer();
     _shouldScan = false;
     _loadingResult = false;
     _statusMessage = '';
@@ -834,11 +857,24 @@ class _ScanPageState extends State<ScanPage> {
     if (value.focusPointSupported) {
       unawaited(controller.setFocusPoint(point).catchError((_) {}));
     }
-    if (value.exposurePointSupported) {
+    // A fixed exposure from the Debug page shouldn't follow taps.
+    if (value.exposurePointSupported && !_fixedExposure) {
       unawaited(controller.setExposurePoint(point).catchError((_) {}));
     }
+    // Setting an exposure point resets the iPhone exposure setup.
+    _configureCamera();
     setState(() => _focusIndicator = tap);
   }
+
+  // camera_desktop fails above low on Linux:
+  // https://github.com/hugocornellier/camera_desktop/issues/8
+  ResolutionPreset get _cameraResolution =>
+      Platform.isLinux ? ResolutionPreset.low : _appSettings.cameraResolution;
+
+  int? get _cameraFps =>
+      (Platform.isIOS || Platform.isAndroid) && _appSettings.camera60Fps
+      ? 60
+      : null;
 
   void _onCameraControllerCreated(
     CameraController? controller,
@@ -846,6 +882,26 @@ class _ScanPageState extends State<ScanPage> {
   ) {
     _cameraController = controller;
     _focusLocked = false;
+    _configureCamera();
+  }
+
+  /// A fixed exposure from the Debug page, which automatic exposure mustn't
+  /// override.
+  bool get _fixedExposure =>
+      Platform.isIOS && (_appSettings.debugExposureMs ?? 0) > 0;
+
+  void _configureCamera() {
+    if (!Platform.isIOS || _cameraController == null) return;
+    final exposure = _appSettings.debugExposureMs;
+    unawaited(
+      ScanCamera.configure(
+        videoHdr: _appSettings.debugVideoHdr,
+        maxExposureMs: exposure == null
+            ? ScanCamera.defaultMaxExposureMs
+            : null,
+        exposureMs: (exposure ?? 0) > 0 ? exposure : null,
+      ).catchError((Object e) => debugPrint('Camera setup failed: $e')),
+    );
   }
 
   void _lockFocus() {
@@ -854,14 +910,20 @@ class _ScanPageState extends State<ScanPage> {
     if (!Platform.isIOS && !Platform.isAndroid) return;
     _focusLocked = true;
     unawaited(_cameraController!.setFocusMode(FocusMode.locked));
+    if (_fixedExposure) {
+      _configureCamera();
+      return;
+    }
     unawaited(_cameraController!.setExposureMode(ExposureMode.auto));
     unawaited(_cameraController!.setExposureOffset(-0.5));
+    _configureCamera();
   }
 
   void _unlockFocus() {
     _focusLocked = false;
     if (_cameraController != null && (Platform.isIOS || Platform.isAndroid)) {
       unawaited(_cameraController!.setFocusMode(FocusMode.auto));
+      if (_fixedExposure) return;
       unawaited(_cameraController!.setExposureMode(ExposureMode.auto));
       unawaited(_cameraController!.setExposureOffset(0.0));
     }

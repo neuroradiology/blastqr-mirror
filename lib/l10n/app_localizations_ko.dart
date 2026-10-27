@@ -455,4 +455,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String sending_files_count(int count) {
     return '파일 $count개 보내는 중';
   }
+
+  @override
+  String get camera_60fps => '60 FPS 카메라';
+
+  @override
+  String get camera_60fps_hint => '실험적 기능입니다. 일부 기기에서는 작동하지 않을 수 있습니다.';
+
+  @override
+  String get debug => '디버그';
+
+  @override
+  String get camera_zoom => '카메라 확대';
+
+  @override
+  String get camera_zoom_hint =>
+      '확대하면 카메라가 초점을 맞출 수 있는 더 먼 거리에서도 코드를 읽을 수 있습니다. 가까이에서 초점을 맞추지 못하는 휴대폰에 도움이 됩니다.';
 }
