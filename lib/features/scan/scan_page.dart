@@ -883,6 +883,20 @@ class _ScanPageState extends State<ScanPage> {
     _cameraController = controller;
     _focusLocked = false;
     _configureCamera();
+    // The camera follows the phone's physical orientation even though the UI
+    // is locked to portrait, which turns the preview when held sideways. iPads
+    // run the UI in landscape and rotate it, so they keep following the device.
+    final isIpad =
+        Platform.isIOS && MediaQuery.sizeOf(context).shortestSide >= 600;
+    if (controller != null &&
+        (Platform.isAndroid || Platform.isIOS) &&
+        !isIpad) {
+      unawaited(
+        controller
+            .lockCaptureOrientation(DeviceOrientation.portraitUp)
+            .catchError((Object e) => debugPrint('Orientation lock failed: $e')),
+      );
+    }
   }
 
   /// A fixed exposure from the Debug page, which automatic exposure mustn't
