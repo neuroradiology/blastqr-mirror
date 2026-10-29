@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:blast_qr/app_preferences.dart';
 import 'package:blast_qr/file_name_utils.dart';
+import 'package:blast_qr/model/scanned_qr_code.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -28,12 +29,16 @@ Future<Directory> receivedFilesDirectory() async {
   return directory;
 }
 
-/// Moves received files to where the setting points and keeps them out of
-/// iCloud backups.
+/// Moves received files and saved QR codes to where they belong and keeps
+/// them out of iCloud backups.
 Future<void> syncReceivedFiles() async {
   final directory = await _moveReceivedFiles();
-  if (Platform.isIOS) {
-    await _channel.invokeMethod('excludeFromBackup', directory.path);
+  if (!Platform.isIOS) return;
+  final qrCodes = await qrCodesDirectory();
+  await _moveFiles(await legacyQrCodesDirectory(), qrCodes);
+  for (final dir in [directory, qrCodes]) {
+    await dir.create(recursive: true);
+    await _channel.invokeMethod('excludeFromBackup', dir.path);
   }
 }
 
@@ -50,18 +55,21 @@ Future<Directory> _moveReceivedFiles() async {
       await _directory(visible: !AppPreferences.showInFilesApp),
   ];
   for (final from in sources) {
-    if (!await from.exists()) continue;
-    await for (final entity in from.list()) {
-      if (entity is! File) continue;
-      final name = await resolveUniqueFileName(
-        to,
-        entity.uri.pathSegments.last,
-      );
-      await entity.rename('${to.path}/$name');
-    }
-    try {
-      await from.delete();
-    } on FileSystemException catch (_) {}
+    await _moveFiles(from, to);
   }
   return to;
+}
+
+/// Moves the files in [from] into [to] and deletes [from].
+Future<void> _moveFiles(Directory from, Directory to) async {
+  if (!await from.exists()) return;
+  await to.create(recursive: true);
+  await for (final entity in from.list()) {
+    if (entity is! File) continue;
+    final name = await resolveUniqueFileName(to, entity.uri.pathSegments.last);
+    await entity.rename('${to.path}/$name');
+  }
+  try {
+    await from.delete();
+  } on FileSystemException catch (_) {}
 }
