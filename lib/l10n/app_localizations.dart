@@ -1023,7 +1023,7 @@ abstract class AppLocalizations {
   /// No description provided for @camera_fps.
   ///
   /// In en, this message translates to:
-  /// **'Camera frame rate'**
+  /// **'Camera FPS'**
   String get camera_fps;
 
   /// No description provided for @camera_fps_hint.
@@ -1043,6 +1043,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Highest available ({fps} FPS)'**
   String fps_auto(String fps);
+
+  /// No description provided for @debug_share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get debug_share;
+
+  /// No description provided for @debug_clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get debug_clear;
+
+  /// No description provided for @debug_camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get debug_camera;
+
+  /// No description provided for @debug_device.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get debug_device;
+
+  /// No description provided for @debug_supported_frame_rates.
+  ///
+  /// In en, this message translates to:
+  /// **'Supported FPS'**
+  String get debug_supported_frame_rates;
+
+  /// No description provided for @debug_save_frames.
+  ///
+  /// In en, this message translates to:
+  /// **'Save sample frames'**
+  String get debug_save_frames;
+
+  /// No description provided for @debug_save_frames_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps a few camera frames per transfer, to look at or share.'**
+  String get debug_save_frames_hint;
+
+  /// No description provided for @debug_last_transfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Last transfers'**
+  String get debug_last_transfers;
+
+  /// No description provided for @debug_no_transfers.
+  ///
+  /// In en, this message translates to:
+  /// **'No transfers yet'**
+  String get debug_no_transfers;
+
+  /// No description provided for @debug_transfers_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'The last 5 transfers, kept in memory. Sharing includes every detail. Useful codes are ones read for the first time.'**
+  String get debug_transfers_hint;
+
+  /// No description provided for @debug_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get debug_unavailable;
+
+  /// No description provided for @debug_status_receiving.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving'**
+  String get debug_status_receiving;
+
+  /// No description provided for @debug_status_complete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get debug_status_complete;
+
+  /// No description provided for @debug_status_stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get debug_status_stopped;
+
+  /// No description provided for @debug_useful_codes.
+  ///
+  /// In en, this message translates to:
+  /// **'Useful codes'**
+  String get debug_useful_codes;
+
+  /// No description provided for @debug_codes_caught.
+  ///
+  /// In en, this message translates to:
+  /// **'Codes caught'**
+  String get debug_codes_caught;
+
+  /// No description provided for @debug_codes_caught_value.
+  ///
+  /// In en, this message translates to:
+  /// **'{caught} of {shown} shown ({percent})'**
+  String debug_codes_caught_value(int caught, int shown, String percent);
+
+  /// No description provided for @debug_camera_value.
+  ///
+  /// In en, this message translates to:
+  /// **'{fps} FPS · {percent} frames with a code'**
+  String debug_camera_value(String fps, String percent);
+
+  /// No description provided for @debug_decode.
+  ///
+  /// In en, this message translates to:
+  /// **'Decode'**
+  String get debug_decode;
+
+  /// No description provided for @debug_decode_value.
+  ///
+  /// In en, this message translates to:
+  /// **'{average} avg · {p95} p95'**
+  String debug_decode_value(String average, String p95);
+
+  /// No description provided for @debug_exposure.
+  ///
+  /// In en, this message translates to:
+  /// **'Exposure'**
+  String get debug_exposure;
+
+  /// No description provided for @debug_frame_codes.
+  ///
+  /// In en, this message translates to:
+  /// **'{read} of {max} codes read'**
+  String debug_frame_codes(int read, int max);
+
+  /// No description provided for @debug_frame_code_read.
+  ///
+  /// In en, this message translates to:
+  /// **'code read'**
+  String get debug_frame_code_read;
+
+  /// No description provided for @debug_frame_no_code.
+  ///
+  /// In en, this message translates to:
+  /// **'no code read'**
+  String get debug_frame_no_code;
+
+  /// No description provided for @debug_sample_frames_multi.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample frames (red: fewer than {max} codes read)'**
+  String debug_sample_frames_multi(int max);
+
+  /// No description provided for @debug_sample_frames.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample frames (red: no code read)'**
+  String get debug_sample_frames;
 }
 
 class _AppLocalizationsDelegate

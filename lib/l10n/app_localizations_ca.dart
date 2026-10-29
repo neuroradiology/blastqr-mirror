@@ -515,7 +515,7 @@ class AppLocalizationsCa extends AppLocalizations {
   }
 
   @override
-  String get camera_fps => 'Fotogrames per segon de la càmera';
+  String get camera_fps => 'FPS de la càmera';
 
   @override
   String get camera_fps_hint =>
@@ -528,4 +528,95 @@ class AppLocalizationsCa extends AppLocalizations {
   String fps_auto(String fps) {
     return 'Màxim disponible ($fps FPS)';
   }
+
+  @override
+  String get debug_share => 'Comparteix';
+
+  @override
+  String get debug_clear => 'Esborra';
+
+  @override
+  String get debug_camera => 'Càmera';
+
+  @override
+  String get debug_device => 'Dispositiu';
+
+  @override
+  String get debug_supported_frame_rates => 'FPS admesos';
+
+  @override
+  String get debug_save_frames => 'Desa fotogrames de mostra';
+
+  @override
+  String get debug_save_frames_hint =>
+      'Desa uns quants fotogrames de la càmera per transferència, per veure\'ls o compartir-los.';
+
+  @override
+  String get debug_last_transfers => 'Últimes transferències';
+
+  @override
+  String get debug_no_transfers => 'Encara no hi ha transferències';
+
+  @override
+  String get debug_transfers_hint =>
+      'Les últimes 5 transferències, desades a la memòria. En compartir s\'hi inclouen tots els detalls. Els codis útils són els que es llegeixen per primer cop.';
+
+  @override
+  String get debug_unavailable => 'No disponible';
+
+  @override
+  String get debug_status_receiving => 'Rebent';
+
+  @override
+  String get debug_status_complete => 'Completada';
+
+  @override
+  String get debug_status_stopped => 'Aturada';
+
+  @override
+  String get debug_useful_codes => 'Codis útils';
+
+  @override
+  String get debug_codes_caught => 'Codis captats';
+
+  @override
+  String debug_codes_caught_value(int caught, int shown, String percent) {
+    return '$caught de $shown mostrats ($percent)';
+  }
+
+  @override
+  String debug_camera_value(String fps, String percent) {
+    return '$fps FPS · $percent dels fotogrames amb un codi';
+  }
+
+  @override
+  String get debug_decode => 'Descodificació';
+
+  @override
+  String debug_decode_value(String average, String p95) {
+    return '$average de mitjana · $p95 p95';
+  }
+
+  @override
+  String get debug_exposure => 'Exposició';
+
+  @override
+  String debug_frame_codes(int read, int max) {
+    return '$read de $max codis llegits';
+  }
+
+  @override
+  String get debug_frame_code_read => 'codi llegit';
+
+  @override
+  String get debug_frame_no_code => 'cap codi llegit';
+
+  @override
+  String debug_sample_frames_multi(int max) {
+    return 'Fotogrames de mostra (vermell: menys de $max codis llegits)';
+  }
+
+  @override
+  String get debug_sample_frames =>
+      'Fotogrames de mostra (vermell: cap codi llegit)';
 }

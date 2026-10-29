@@ -514,7 +514,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get camera_fps => 'Camera frame rate';
+  String get camera_fps => 'Camera FPS';
 
   @override
   String get camera_fps_hint =>
@@ -527,4 +527,94 @@ class AppLocalizationsEn extends AppLocalizations {
   String fps_auto(String fps) {
     return 'Highest available ($fps FPS)';
   }
+
+  @override
+  String get debug_share => 'Share';
+
+  @override
+  String get debug_clear => 'Clear';
+
+  @override
+  String get debug_camera => 'Camera';
+
+  @override
+  String get debug_device => 'Device';
+
+  @override
+  String get debug_supported_frame_rates => 'Supported FPS';
+
+  @override
+  String get debug_save_frames => 'Save sample frames';
+
+  @override
+  String get debug_save_frames_hint =>
+      'Keeps a few camera frames per transfer, to look at or share.';
+
+  @override
+  String get debug_last_transfers => 'Last transfers';
+
+  @override
+  String get debug_no_transfers => 'No transfers yet';
+
+  @override
+  String get debug_transfers_hint =>
+      'The last 5 transfers, kept in memory. Sharing includes every detail. Useful codes are ones read for the first time.';
+
+  @override
+  String get debug_unavailable => 'Unavailable';
+
+  @override
+  String get debug_status_receiving => 'Receiving';
+
+  @override
+  String get debug_status_complete => 'Complete';
+
+  @override
+  String get debug_status_stopped => 'Stopped';
+
+  @override
+  String get debug_useful_codes => 'Useful codes';
+
+  @override
+  String get debug_codes_caught => 'Codes caught';
+
+  @override
+  String debug_codes_caught_value(int caught, int shown, String percent) {
+    return '$caught of $shown shown ($percent)';
+  }
+
+  @override
+  String debug_camera_value(String fps, String percent) {
+    return '$fps FPS · $percent frames with a code';
+  }
+
+  @override
+  String get debug_decode => 'Decode';
+
+  @override
+  String debug_decode_value(String average, String p95) {
+    return '$average avg · $p95 p95';
+  }
+
+  @override
+  String get debug_exposure => 'Exposure';
+
+  @override
+  String debug_frame_codes(int read, int max) {
+    return '$read of $max codes read';
+  }
+
+  @override
+  String get debug_frame_code_read => 'code read';
+
+  @override
+  String get debug_frame_no_code => 'no code read';
+
+  @override
+  String debug_sample_frames_multi(int max) {
+    return 'Sample frames (red: fewer than $max codes read)';
+  }
+
+  @override
+  String get debug_sample_frames => 'Sample frames (red: no code read)';
 }

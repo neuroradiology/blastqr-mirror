@@ -4,6 +4,7 @@ import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/debug_channel.dart';
 import 'package:blast_qr/features/scan/decode_stats.dart';
 import 'package:blast_qr/features/settings/widgets/setting_group_title.dart';
+import 'package:blast_qr/l10n/app_localizations.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -11,7 +12,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-// Developer-only page, so the text in it isn't translated.
+/// The shared export stays in English, since it's read by developers.
 class DebugPage extends StatelessWidget {
   const DebugPage({super.key});
 
@@ -25,13 +26,13 @@ class DebugPage extends StatelessWidget {
           // Builder, so the share sheet can anchor to the button on iPad.
           Builder(
             builder: (buttonContext) => IconButton(
-              tooltip: 'Share',
+              tooltip: context.l10n.debug_share,
               onPressed: () => _share(buttonContext),
               icon: const HugeIcon(icon: HugeIcons.strokeRoundedShare08),
             ),
           ),
           IconButton(
-            tooltip: 'Clear',
+            tooltip: context.l10n.debug_clear,
             onPressed: stats.clear,
             icon: const HugeIcon(icon: HugeIcons.strokeRoundedDelete02),
           ),
@@ -48,35 +49,30 @@ class DebugPage extends StatelessWidget {
               MediaQuery.of(context).padding.bottom,
             ),
             children: [
-              const SettingGroupTitle(title: 'Camera'),
-              _FutureRow('Device', DebugChannel.deviceModel),
-              _Row('Settings', stats.camera ?? '-'),
+              SettingGroupTitle(title: context.l10n.debug_camera),
+              _FutureRow(context.l10n.debug_device, DebugChannel.deviceModel),
+              _Row(context.l10n.settings, stats.camera ?? '-'),
               if (Platform.isAndroid)
                 _FutureRow(
-                  'Supported frame rates',
+                  context.l10n.debug_supported_frame_rates,
                   DebugChannel.backCameraFpsRanges,
                 ),
               SwitchListTile.adaptive(
                 contentPadding: const EdgeInsetsDirectional.only(start: 16),
-                title: const Text('Save sample frames'),
-                subtitle: const Text(
-                  'Keeps a few camera frames per transfer, to look at or '
-                  'share. Uses a few MB per transfer.',
-                ),
+                title: Text(context.l10n.debug_save_frames),
+                subtitle: Text(context.l10n.debug_save_frames_hint),
                 value: stats.saveFrames,
                 onChanged: stats.updateSaveFrames,
                 activeTrackColor: context.color.primary,
               ),
-              const SettingGroupTitle(title: 'Last transfers'),
+              SettingGroupTitle(title: context.l10n.debug_last_transfers),
               if (stats.transfers.isEmpty)
-                const ListTile(title: Text('No transfers yet')),
+                ListTile(title: Text(context.l10n.debug_no_transfers)),
               for (final transfer in stats.transfers) _TransferTile(transfer),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Text(
-                  'The last 5 transfers, kept in memory. Sharing includes '
-                  'every detail. Useful codes are ones read for the first '
-                  'time; their rates only count time spent receiving.',
+                  context.l10n.debug_transfers_hint,
                   style: TextStyle(color: context.color.outline),
                 ),
               ),
@@ -90,6 +86,7 @@ class DebugPage extends StatelessWidget {
   Future<void> _share(BuildContext buttonContext) async {
     final stats = DecodeStats.instance;
     final info = await PackageInfo.fromPlatform();
+    final english = lookupAppLocalizations(const Locale('en'));
     final lines = [
       'blastQR debug export, ${DateTime.now().toIso8601String()}',
       'App: ${info.version}+${info.buildNumber}',
@@ -100,7 +97,7 @@ class DebugPage extends StatelessWidget {
         'Supported frame rates: ${await _orUnavailable(DebugChannel.backCameraFpsRanges)}',
       for (final (i, t) in stats.transfers.indexed) ...[
         '',
-        '## Transfer ${i + 1}: ${_startTime(t)} · ${_transferSummary(t)}'
+        '## Transfer ${i + 1}: ${_startTime(t)} · ${_transferSummary(t, english)}'
             '${t.nearOptimal ? ' · near optimal' : ''}',
         'Camera: ${t.camera}',
         for (final (label, value) in _transferRows(t)) '$label: $value',
@@ -160,7 +157,7 @@ class _TransferTile extends StatelessWidget {
       shape: const Border(),
       title: Row(
         children: [
-          Flexible(child: Text(_transferSummary(t))),
+          Flexible(child: Text(_transferSummary(t, context.l10n))),
           if (t.nearOptimal)
             const Padding(
               padding: EdgeInsets.only(left: 4),
@@ -170,7 +167,8 @@ class _TransferTile extends StatelessWidget {
       ),
       subtitle: Text(_startTime(t)),
       children: [
-        for (final (label, value) in _summaryRows(t)) _Row(label, value),
+        for (final (label, value) in _summaryRows(t, context.l10n))
+          _Row(label, value),
         if (t.savedFrames.isNotEmpty)
           _FrameStrip(t.savedFrames, maxCodes: t.maxCodesPerFrame),
       ],
@@ -192,11 +190,11 @@ class _FrameStrip extends StatelessWidget {
 
   bool _failed(SavedFrame frame) => frame.codes == 0 || frame.codes < maxCodes;
 
-  String _codes(SavedFrame frame) => maxCodes > 1
-      ? '${frame.codes} of $maxCodes codes read'
+  String _codes(BuildContext context, SavedFrame frame) => maxCodes > 1
+      ? context.l10n.debug_frame_codes(frame.codes, maxCodes)
       : frame.codes > 0
-      ? 'code read'
-      : 'no code read';
+      ? context.l10n.debug_frame_code_read
+      : context.l10n.debug_frame_no_code;
 
   @override
   Widget build(BuildContext context) {
@@ -208,8 +206,8 @@ class _FrameStrip extends StatelessWidget {
         children: [
           Text(
             maxCodes > 1
-                ? 'Sample frames (red: fewer than $maxCodes codes read)'
-                : 'Sample frames (red: no code read)',
+                ? context.l10n.debug_sample_frames_multi(maxCodes)
+                : context.l10n.debug_sample_frames,
             style: TextStyle(color: context.color.outline),
           ),
           SizedBox(
@@ -254,7 +252,7 @@ class _FrameStrip extends StatelessWidget {
             foregroundColor: Colors.white,
             title: Text(
               '${(frame.at.inMilliseconds / 1000).toStringAsFixed(2)} s · '
-              '${_codes(frame)}',
+              '${_codes(context, frame)}',
             ),
           ),
           body: InteractiveViewer(
@@ -270,12 +268,12 @@ class _FrameStrip extends StatelessWidget {
 String _startTime(TransferStats t) =>
     t.started.toIso8601String().substring(11, 19);
 
-String _transferSummary(TransferStats t) {
+String _transferSummary(TransferStats t, AppLocalizations l10n) {
   final status = identical(t, DecodeStats.instance.current)
-      ? 'Receiving'
+      ? l10n.debug_status_receiving
       : t.completed
-      ? 'Complete'
-      : 'Stopped';
+      ? l10n.debug_status_complete
+      : l10n.debug_status_stopped;
   final speed = t.newBytesPerSecond == 0
       ? '-'
       : '${_kb(t.newBytesPerSecond)}/s';
@@ -283,37 +281,42 @@ String _transferSummary(TransferStats t) {
 }
 
 /// The few numbers that matter most; [_transferRows] has the rest.
-List<(String, String)> _summaryRows(TransferStats t) {
+List<(String, String)> _summaryRows(TransferStats t, AppLocalizations l10n) {
   final sorted = t.sortedDecodeMicros();
   final samples = t.cameraSamples;
   double average(Iterable<double> values) =>
       values.reduce((a, b) => a + b) / values.length;
   return [
     (
-      'Useful codes',
+      l10n.debug_useful_codes,
       '${_fps(t.newCodesPerSecond)}/s · '
           '${t.newBytesPerSecond == 0 ? '-' : _kb(t.newBytesPerSecond)}/s',
     ),
     if (t.codesShown case final shown?)
       (
-        'Codes caught',
-        '${t.codesCaught} of $shown shown '
-            '(${_percent(t.codesCaught, shown)})',
+        l10n.debug_codes_caught,
+        l10n.debug_codes_caught_value(
+          t.codesCaught,
+          shown,
+          _percent(t.codesCaught, shown),
+        ),
       ),
     (
-      'Camera',
-      '${t.camera}\n${_fps(t.cameraFps)} FPS · ${_percent(t.framesWithCode, t.decoded)} '
-          'frames with a code',
+      l10n.debug_camera,
+      '${t.camera}\n'
+          '${l10n.debug_camera_value(_fps(t.cameraFps), _percent(t.framesWithCode, t.decoded))}',
     ),
     if (sorted.isNotEmpty)
       (
-        'Decode',
-        '${_ms(average(sorted.map((v) => v.toDouble())))} avg · '
-            '${_ms(sorted[((sorted.length - 1) * 0.95).round()])} p95',
+        l10n.debug_decode,
+        l10n.debug_decode_value(
+          _ms(average(sorted.map((v) => v.toDouble()))),
+          _ms(sorted[((sorted.length - 1) * 0.95).round()]),
+        ),
       ),
     if (samples.isNotEmpty)
       (
-        'Exposure',
+        l10n.debug_exposure,
         '${average(samples.map((s) => s.exposureMs)).toStringAsFixed(1)} ms · '
             'ISO ${average(samples.map((s) => s.iso)).round()}',
       ),
@@ -363,7 +366,7 @@ List<(String, String)> _cameraRows(List<CameraSample> samples) {
     final values = samples.map(value).toList()..sort();
     final average = values.reduce((a, b) => a + b) / values.length;
     String f(double v) => v.toStringAsFixed(digits);
-    return '${f(values.first)}–${f(values.last)} (avg ${f(average)})';
+    return '${f(values.first)}-${f(values.last)} (avg ${f(average)})';
   }
 
   String modes(String Function(CameraSample) value) =>
@@ -373,7 +376,7 @@ List<(String, String)> _cameraRows(List<CameraSample> samples) {
     (
       'Camera format',
       '${first.format}, '
-          '${first.minFps.round()}–${first.maxFps.round()} FPS',
+          '${first.minFps.round()}-${first.maxFps.round()} FPS',
     ),
     ('Camera samples', '${samples.length}'),
     ('Exposure time', '${range((s) => s.exposureMs, 1)} ms'),
@@ -382,7 +385,7 @@ List<(String, String)> _cameraRows(List<CameraSample> samples) {
     ('Exposure bias', '${range((s) => s.exposureBias, 1)} EV'),
     ('Exposure mode', modes((s) => s.exposureMode)),
     ('Focus mode', modes((s) => s.focusMode)),
-    ('Zoom', '${range((s) => s.zoom, 2)}×'),
+    ('Zoom', '${range((s) => s.zoom, 2)}x'),
     (
       'Video HDR',
       first.videoHdrSupported
@@ -451,7 +454,9 @@ class _FutureRow extends StatelessWidget {
       builder: (context, snapshot) => ListTile(
         title: Text(label),
         subtitle: Text(
-          snapshot.hasError ? 'Unavailable' : snapshot.data ?? '…',
+          snapshot.hasError
+              ? context.l10n.debug_unavailable
+              : snapshot.data ?? '...',
         ),
       ),
     );

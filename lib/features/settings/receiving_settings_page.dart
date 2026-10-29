@@ -25,7 +25,7 @@ class ReceivingSettingsPage extends StatefulWidget {
 const _zoomLevels = [1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0];
 
 String _zoomLabel(double zoom) =>
-    '${zoom == zoom.roundToDouble() ? zoom.toInt() : zoom}×';
+    '${zoom == zoom.roundToDouble() ? zoom.toInt() : zoom}x';
 
 class _ReceivingSettingsPageState extends State<ReceivingSettingsPage> {
   @override

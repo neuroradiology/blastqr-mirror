@@ -15,7 +15,7 @@ abstract final class DebugChannel {
       .then((ranges) {
         final labels = {
           for (final r in ranges ?? const <List<Object?>>[])
-            r[0] == r[1] ? '${r[0]}' : '${r[0]}–${r[1]}',
+            r[0] == r[1] ? '${r[0]}' : '${r[0]}-${r[1]}',
         };
         return labels.isEmpty ? 'None reported' : labels.join(', ');
       });

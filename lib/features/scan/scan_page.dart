@@ -9,8 +9,8 @@ import 'package:blast_qr/features/scan/decode_stats.dart';
 import 'package:blast_qr/features/scan/received_file_writer.dart';
 import 'package:blast_qr/features/scan/scan_camera.dart';
 import 'package:blast_qr/features/scan/transfer_tracker.dart';
-import 'package:blast_qr/features/scan/widgets/qr_scanner.dart';
 import 'package:blast_qr/features/scan/widgets/password_sheet.dart';
+import 'package:blast_qr/features/scan/widgets/qr_scanner.dart';
 import 'package:blast_qr/features/settings/settings_page.dart';
 import 'package:blast_qr/file_badge_count.dart';
 import 'package:blast_qr/file_name_utils.dart';
@@ -111,7 +111,7 @@ class _ScanPageState extends State<ScanPage> {
         'default FPS'
       else
         '$fps FPS${_cameraFps == null ? ' (highest)' : ''}',
-      '${_appSettings.cameraZoom}× zoom',
+      '${_appSettings.cameraZoom}x zoom',
       if (Platform.isIOS) ...[
         _appSettings.debugVideoHdr ? 'HDR on' : 'HDR off',
         switch (_appSettings.debugExposureMs) {
