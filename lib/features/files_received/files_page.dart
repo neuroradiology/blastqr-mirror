@@ -1,6 +1,11 @@
 import 'dart:io';
 
 import 'package:blast_qr/color_scheme.dart';
+import 'package:blast_qr/features/files_received/save_to_downloads.dart';
+import 'package:blast_qr/features/files_received/received_items.dart';
+import 'package:blast_qr/features/files_received/widgets/file_options_sheet.dart';
+import 'package:blast_qr/features/files_received/widgets/qr_code_sheet.dart';
+import 'package:blast_qr/features/files_received/widgets/received_item_tile.dart';
 import 'package:blast_qr/features/send/send_files.dart';
 import 'package:blast_qr/features/send/send_options.dart';
 import 'package:blast_qr/features/send/widgets/custom_password_sheet.dart';
@@ -14,30 +19,16 @@ import 'package:blast_qr/model/scanned_qr_code.dart';
 import 'package:blast_qr/widgets/blast_chip.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:blast_qr/widgets/circle_button.dart';
-import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:blast_qr/widgets/logo_widget.dart';
-import 'package:blast_qr/widgets/qr_code_thumbnail.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
-import 'package:media_scanner/media_scanner.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-enum _FilterType { all, image, video, audio, document, book, other, qr }
-
-class _DateHeader {
-  final DateTime date;
-  final bool isOlder;
-  _DateHeader(this.date, {this.isOlder = false});
-}
-
 class FilesPage extends StatefulWidget {
-  const FilesPage({super.key, this.onPickFile});
-
-  final void Function(File? file)? onPickFile;
+  const FilesPage({super.key});
 
   @override
   State<FilesPage> createState() => _FilesPageState();
@@ -45,30 +36,20 @@ class FilesPage extends StatefulWidget {
 
 class _FilesPageState extends State<FilesPage> {
   static const _chipsOverlap = 12.0;
-  double cacheWidth = 100;
-  List<FileWrapper> _files = [];
-  List<ScannedQrCode> _qrCodes = [];
-  bool _isLoading = true;
-  _FilterType _selectedFilter = _FilterType.all;
 
-  /// Holds [FileWrapper]s and [ScannedQrCode]s.
-  final Set<Object> _selectedItems = {};
+  /// Newest first. Created once per load so selection can match by identity.
+  List<ReceivedItem> _items = [];
+  bool _isLoading = true;
+  ReceivedFilter _selectedFilter = ReceivedFilter.all;
+  final Set<ReceivedItem> _selectedItems = {};
 
   bool get _isSelecting => _selectedItems.isNotEmpty;
 
   void _exitSelectionMode() => setState(() => _selectedItems.clear());
 
-  void _onLongPressItem(Object item) {
-    setState(() => _selectedItems.add(item));
-  }
-
-  void _toggleSelection(Object item) {
+  void _toggleSelection(ReceivedItem item) {
     setState(() {
-      if (_selectedItems.contains(item)) {
-        _selectedItems.remove(item);
-      } else {
-        _selectedItems.add(item);
-      }
+      if (!_selectedItems.remove(item)) _selectedItems.add(item);
     });
   }
 
@@ -76,13 +57,6 @@ class _FilesPageState extends State<FilesPage> {
   void initState() {
     super.initState();
     _loadItems();
-
-    final mediaQuery =
-        (context.getElementForInheritedWidgetOfExactType<MediaQuery>()!.widget
-                as MediaQuery)
-            .data;
-    cacheWidth =
-        mediaQuery.devicePixelRatio * ((mediaQuery.size.width / 2) - 64);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<FileBadgeCount>(context, listen: false).clear();
     });
@@ -92,104 +66,27 @@ class _FilesPageState extends State<FilesPage> {
     final directory = await getApplicationDocumentsDirectory();
     final itemsDirectory = Directory('${directory.path}/docs');
 
-    if (await itemsDirectory.exists()) {
-      final List<FileSystemEntity> files = itemsDirectory.listSync();
-      _files =
-          await Future.wait(
-              files.whereType<File>().map((f) async => await f.toFileWrapper()),
-            )
-            ..sort((l, r) => r.modified.compareTo(l.modified));
-    } else {
-      _files = []; // No images found
-    }
-    _qrCodes = await loadScannedQrCodes(await qrCodesDirectory());
+    final files = await itemsDirectory.exists()
+        ? await Future.wait(
+            itemsDirectory.listSync().whereType<File>().map(
+              (f) => f.toFileWrapper(),
+            ),
+          )
+        : <FileWrapper>[];
+    final qrCodes = await loadScannedQrCodes(await qrCodesDirectory());
+    _items = [
+      ...files.map(ReceivedFile.new),
+      ...qrCodes.map(ReceivedQrCode.new),
+    ]..sort((l, r) => r.date.compareTo(l.date));
     _isLoading = false;
     setState(() {});
   }
 
-  Set<_FilterType> get _availableFilters {
-    final types = <_FilterType>{_FilterType.all};
-    for (final f in _files) {
-      if (f.type.isImage) {
-        types.add(_FilterType.image);
-      } else if (f.type.isVideo) {
-        types.add(_FilterType.video);
-      } else if (f.type.isAudio) {
-        types.add(_FilterType.audio);
-      } else if (f.type.isDocument) {
-        types.add(_FilterType.document);
-      } else if (f.type.isEbook) {
-        types.add(_FilterType.book);
-      } else {
-        types.add(_FilterType.other);
-      }
-    }
-    if (_qrCodes.isNotEmpty) types.add(_FilterType.qr);
-    return types;
-  }
+  List<ReceivedItem> get _filteredItems => _selectedFilter == ReceivedFilter.all
+      ? _items
+      : _items.where((item) => item.filter == _selectedFilter).toList();
 
-  /// [FileWrapper]s and [ScannedQrCode]s matching the filter.
-  List<Object> get _filteredItems {
-    if (_selectedFilter == _FilterType.all) return [..._files, ..._qrCodes];
-    if (_selectedFilter == _FilterType.qr) return [..._qrCodes];
-    return _files.where((f) {
-      switch (_selectedFilter) {
-        case _FilterType.all:
-        case _FilterType.qr:
-          return true;
-        case _FilterType.image:
-          return f.type.isImage;
-        case _FilterType.video:
-          return f.type.isVideo;
-        case _FilterType.audio:
-          return f.type.isAudio;
-        case _FilterType.document:
-          return f.type.isDocument;
-        case _FilterType.book:
-          return f.type.isEbook;
-        case _FilterType.other:
-          return !f.type.isImage &&
-              !f.type.isVideo &&
-              !f.type.isAudio &&
-              !f.type.isDocument &&
-              !f.type.isEbook;
-      }
-    }).toList();
-  }
-
-  List<Object> _buildListItems() {
-    final twoYearsAgo = DateUtils.dateOnly(
-      DateTime.now().subtract(const Duration(days: 365 * 2)),
-    );
-    final grouped = <DateTime, List<Object>>{};
-    final olderFiles = <Object>[];
-    final items = _filteredItems
-      ..sort((l, r) => _dateOf(r).compareTo(_dateOf(l)));
-    for (final f in items) {
-      final day = DateUtils.dateOnly(_dateOf(f));
-      if (!day.isAfter(twoYearsAgo)) {
-        olderFiles.add(f);
-      } else {
-        grouped.putIfAbsent(day, () => []).add(f);
-      }
-    }
-    final sortedDays = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    final listItems = <Object>[];
-    for (final day in sortedDays) {
-      listItems.add(_DateHeader(day));
-      listItems.addAll(grouped[day]!);
-    }
-    if (olderFiles.isNotEmpty) {
-      listItems.add(_DateHeader(DateTime(0), isOlder: true));
-      listItems.addAll(olderFiles);
-    }
-    return listItems;
-  }
-
-  DateTime _dateOf(Object item) =>
-      item is ScannedQrCode ? item.scanned : (item as FileWrapper).modified;
-
-  String _formatDateHeader(_DateHeader header) {
+  String _formatDateHeader(DateHeader header) {
     if (header.isOlder) return context.l10n.older;
     final date = header.date;
     final now = DateUtils.dateOnly(DateTime.now());
@@ -203,52 +100,36 @@ class _FilesPageState extends State<FilesPage> {
     ).format(date);
   }
 
-  String _filterLabel(_FilterType filter) {
-    switch (filter) {
-      case _FilterType.all:
-        return context.l10n.filter_all;
-      case _FilterType.image:
-        return context.l10n.filter_images;
-      case _FilterType.video:
-        return context.l10n.filter_videos;
-      case _FilterType.audio:
-        return context.l10n.filter_audio;
-      case _FilterType.document:
-        return context.l10n.filter_document;
-      case _FilterType.book:
-        return context.l10n.filter_book;
-      case _FilterType.other:
-        return context.l10n.filter_other;
-      case _FilterType.qr:
-        return context.l10n.filter_qr;
-    }
-  }
+  String _filterLabel(ReceivedFilter filter) => switch (filter) {
+    ReceivedFilter.all => context.l10n.filter_all,
+    ReceivedFilter.image => context.l10n.filter_images,
+    ReceivedFilter.video => context.l10n.filter_videos,
+    ReceivedFilter.audio => context.l10n.filter_audio,
+    ReceivedFilter.document => context.l10n.filter_document,
+    ReceivedFilter.book => context.l10n.filter_book,
+    ReceivedFilter.other => context.l10n.filter_other,
+    ReceivedFilter.qr => context.l10n.filter_qr,
+  };
 
   Widget _buildChipsRow() {
-    const orderedFilters = [
-      _FilterType.all,
-      _FilterType.image,
-      _FilterType.video,
-      _FilterType.audio,
-      _FilterType.document,
-      _FilterType.book,
-      _FilterType.other,
-      _FilterType.qr,
-    ];
-    final available = _availableFilters;
-    final chips = orderedFilters.where(available.contains).toList();
+    final available = {
+      ReceivedFilter.all,
+      for (final item in _items) item.filter,
+    };
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Row(
         spacing: 8,
-        children: chips.map((filter) {
-          return BlastChip(
-            label: Text(_filterLabel(filter)),
-            selected: _selectedFilter == filter,
-            onSelected: (_) => setState(() => _selectedFilter = filter),
-          );
-        }).toList(),
+        children: [
+          for (final filter in ReceivedFilter.values)
+            if (available.contains(filter))
+              BlastChip(
+                label: Text(_filterLabel(filter)),
+                selected: _selectedFilter == filter,
+                onSelected: (_) => setState(() => _selectedFilter = filter),
+              ),
+        ],
       ),
     );
   }
@@ -318,7 +199,7 @@ class _FilesPageState extends State<FilesPage> {
           if (_isLoading) {
             return const Center(child: CircularProgressIndicator.adaptive());
           }
-          if (_files.isEmpty && _qrCodes.isEmpty) {
+          if (_items.isEmpty) {
             return Center(
               child: Column(
                 spacing: 16,
@@ -334,7 +215,7 @@ class _FilesPageState extends State<FilesPage> {
               ),
             );
           }
-          final listItems = _buildListItems();
+          final rows = groupByDay(_filteredItems);
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
@@ -343,99 +224,37 @@ class _FilesPageState extends State<FilesPage> {
                 ),
               ),
               SliverToBoxAdapter(child: _buildChipsRow()),
-              if (listItems.isEmpty)
+              if (rows.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(child: Text(context.l10n.no_files_msg)),
                 )
               else
                 SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final item = listItems[index];
-                    if (item is _DateHeader) {
-                      return Padding(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => switch (rows[index]) {
+                      final DateHeader header => Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                         child: Text(
-                          _formatDateHeader(item),
+                          _formatDateHeader(header),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: context.color.onSurfaceVariant,
                           ),
                         ),
-                      );
-                    }
-                    final qrCode = item is ScannedQrCode ? item : null;
-                    final file = item is FileWrapper ? item : null;
-                    final isSelected = _selectedItems.contains(item);
-                    return ListTile(
-                      selected: _isSelecting && isSelected,
-                      onTap: () {
-                        if (_isSelecting) {
-                          _toggleSelection(item);
-                        } else if (qrCode != null) {
-                          _onTapQrCode(qrCode);
-                        } else {
-                          _onTapItem(file!);
-                        }
-                      },
-                      onLongPress: () => _onLongPressItem(item),
-                      leading: Stack(
-                        children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            clipBehavior: Clip.antiAlias,
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha(60),
-                                  spreadRadius: 0,
-                                  blurRadius: 2,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: qrCode != null
-                                ? QrCodeThumbnail(text: qrCode.text, size: 56)
-                                : file!.buildThumbnail(context, size: 56),
-                          ),
-                          if (_isSelecting)
-                            Positioned.fill(
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 150),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? context.color.primary.withAlpha(180)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: isSelected
-                                    ? const Icon(
-                                        Icons.check,
-                                        color: Colors.white,
-                                        size: 28,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                        ],
                       ),
-                      title: Text(
-                        qrCode != null
-                            ? context.l10n.scanned_at(
-                                DateFormat.yMd(
-                                  Localizations.localeOf(context).languageCode,
-                                ).add_Hm().format(qrCode.scanned),
-                              )
-                            : file!.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      final ReceivedItem item => ReceivedItemTile(
+                        item: item,
+                        isSelecting: _isSelecting,
+                        isSelected: _selectedItems.contains(item),
+                        onTap: () => _onTapItem(item),
+                        onLongPress: () =>
+                            setState(() => _selectedItems.add(item)),
                       ),
-                      subtitle: Text(qrCode?.sizeLabel ?? file!.sizeInkB),
-                    );
-                  }, childCount: listItems.length),
+                    },
+                    childCount: rows.length,
+                  ),
                 ),
               SliverToBoxAdapter(
                 child: SizedBox(height: MediaQuery.of(context).padding.bottom),
@@ -447,150 +266,25 @@ class _FilesPageState extends State<FilesPage> {
     );
   }
 
-  void _onTapItem(FileWrapper file) {
-    final date = file.modified;
-    final dateString = DateFormat('yyyy-MM-dd HH:mm:ss').format(date);
-    showSheet(
-      context: context,
-      title: context.l10n.file_options,
-      body: Column(
-        children: [
-          _FilePreview(
-            file: file,
-            detail: dateString,
-            onTapThumbnail: () => _onTapOpen(file),
-          ),
-          const SizedBox(height: 8),
-          ListTile(
-            dense: true,
-            onTap: () {
-              _onTapOpen(file);
-            },
-            leading: HugeIcon(
-              icon: HugeIcons.strokeRoundedPackageOpen,
-              color: context.color.primary,
-            ),
-            title: Text(context.l10n.open),
-          ),
-          if (Platform.isAndroid)
-            ListTile(
-              dense: true,
-              onTap: () {
-                _trySaveToDownloads(file.file);
-              },
-              leading: HugeIcon(
-                icon: HugeIcons.strokeRoundedDownload01,
-                color: context.color.primary,
-              ),
-              title: Text(context.l10n.save_to_downloads),
-            ),
-          ListTile(
-            dense: true,
-            onTap: () {
-              _onTapRename(file);
-            },
-            leading: HugeIcon(
-              icon: HugeIcons.strokeRoundedEdit01,
-              color: context.color.primary,
-            ),
-            title: Text(context.l10n.rename),
-          ),
-          SendTile(
-            onTap: () {
-              Navigator.of(context).pop();
-              _onTapSend(file, plainSend);
-            },
-          ),
-          SendEncryptedTile(
-            onTap: () {
-              Navigator.of(context).pop();
-              _onTapSend(file, encryptedSend());
-            },
-            onLongPress: () async {
-              Navigator.of(context).pop();
-              final password = await showCustomPasswordSheet(context);
-              if (password == null || !mounted) return;
-              _onTapSend(file, (password: password, fileName: null));
-            },
-          ),
-          ListTile(
-            dense: true,
-            onTap: () {
-              _onTapDelete(file.file);
-            },
-            title: Text(context.l10n.delete),
-
-            leading: HugeIcon(
-              icon: HugeIcons.strokeRoundedDelete01,
-              color: context.color.primary,
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-
-  void _onTapQrCode(ScannedQrCode qrCode) {
-    showSheet(
-      context: context,
-      title: context.l10n.qr_code,
-      body: Column(
-        children: [
-          Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(60),
-                  blurRadius: 1,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: QrCodeThumbnail(text: qrCode.text, size: 150),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Center(
-              child: SelectableText(
-                qrCode.text,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
-          ListTile(
-            dense: true,
-            onTap: () {
-              Navigator.of(context).pop();
-              Clipboard.setData(ClipboardData(text: qrCode.text));
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(context.l10n.copied)));
-            },
-            leading: HugeIcon(
-              icon: HugeIcons.strokeRoundedCopy01,
-              color: context.color.primary,
-            ),
-            title: Text(context.l10n.copy),
-          ),
-          ListTile(
-            dense: true,
-            onTap: () {
-              _onTapDelete(qrCode.file);
-            },
-            leading: HugeIcon(
-              icon: HugeIcons.strokeRoundedDelete01,
-              color: context.color.primary,
-            ),
-            title: Text(context.l10n.delete),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
+  void _onTapItem(ReceivedItem item) {
+    if (_isSelecting) {
+      _toggleSelection(item);
+      return;
+    }
+    switch (item) {
+      case ReceivedFile(:final file):
+        showFileOptionsSheet(
+          context,
+          file,
+          onOpen: () => _onTapOpen(file),
+          onSaveToDownloads: () => _trySaveToDownloads(file.file),
+          onRename: () => _onTapRename(file),
+          onSend: (options) => sendFiles(context, [file], options),
+          onDelete: () => _onTapDelete(file.file),
+        );
+      case ReceivedQrCode(:final code):
+        showQrCodeSheet(context, code, onDelete: () => _onTapDelete(code.file));
+    }
   }
 
   void _onTapOpen(FileWrapper file) async {
@@ -598,22 +292,14 @@ class _FilesPageState extends State<FilesPage> {
       OpenFile.open(file.file.path, type: file.type.mimeType ?? '');
     } catch (error) {
       Navigator.of(context).pop();
-      final snackBar = SnackBar(content: Text(error.toString()));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      _showError(error);
     }
   }
 
-  void _onTapSend(FileWrapper file, SendOptions options) {
-    sendFiles(context, [file], options);
-  }
-
   Future<void> _showMultiSelectSheet() async {
-    final files = await Future.wait([
-      for (final item in _selectedItems)
-        item is ScannedQrCode
-            ? item.file.toFileWrapper()
-            : Future.value(item as FileWrapper),
-    ]);
+    final files = await Future.wait(
+      _selectedItems.map((item) => item.toFileWrapper()),
+    );
     if (!mounted) return;
     showSheet(
       context: context,
@@ -678,41 +364,29 @@ class _FilesPageState extends State<FilesPage> {
     int saved = 0;
     for (final f in files) {
       try {
-        await _saveFileToDownloads(f.file);
+        await saveToDownloads(f.file);
         saved++;
       } catch (_) {}
     }
     if (mounted) {
       _exitSelectionMode();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${context.l10n.saved_to} /storage/emulated/0/Download ($saved/${files.length})',
-          ),
-        ),
+      _showSnackBar(
+        '${context.l10n.saved_to} $androidDownloadsPath ($saved/${files.length})',
       );
     }
   }
 
-  Future<void> _saveFileToDownloads(File file, {String? newName}) async {
-    final directory = Directory('/storage/emulated/0/Download');
-    final newPath =
-        '${directory.path}/${newName ?? file.uri.pathSegments.last}';
+  void _trySaveToDownloads(File file) async {
     try {
-      await file.copy(newPath);
-      MediaScanner.loadMedia(path: newPath);
+      final path = await saveToDownloads(file);
+      if (mounted) {
+        Navigator.of(context).pop();
+        _showSnackBar('${context.l10n.saved_to} $path');
+      }
     } catch (error) {
-      if (error is PathExistsException) {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final nameComps = file.uri.pathSegments.last.split('.');
-        final name = nameComps.elementAtOrNull(0);
-        final ext = nameComps.elementAtOrNull(1);
-        await _saveFileToDownloads(
-          file,
-          newName: '${name ?? 'file'}_$timestamp.${ext ?? 'bin'}',
-        );
-      } else {
-        rethrow;
+      if (mounted) {
+        Navigator.of(context).pop();
+        _showError(error);
       }
     }
   }
@@ -766,10 +440,7 @@ class _FilesPageState extends State<FilesPage> {
       await file.rename(newPath);
       await _loadItems();
     } catch (error) {
-      if (mounted) {
-        final snackBar = SnackBar(content: Text(error.toString()));
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      }
+      if (mounted) _showError(error);
     }
   }
 
@@ -792,66 +463,15 @@ class _FilesPageState extends State<FilesPage> {
       await file.delete();
       await _loadItems();
     } catch (error) {
-      if (mounted) {
-        final snackBar = SnackBar(content: Text(error.toString()));
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      }
+      if (mounted) _showError(error);
     }
   }
 
-  void _trySaveToDownloads(File file, {String? newName}) async {
-    try {
-      await _saveFileToDownloads(file, newName: newName);
-      if (mounted) {
-        Navigator.of(context).pop();
-        final newPath =
-            '/storage/emulated/0/Download/${newName ?? file.uri.pathSegments.last}';
-        final snackBar = SnackBar(
-          content: Text('${context.l10n.saved_to} $newPath'),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      }
-    } catch (error) {
-      if (mounted) {
-        Navigator.of(context).pop();
-        final snackBar = SnackBar(content: Text(error.toString()));
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      }
-    }
-  }
-}
+  void _showError(Object error) => _showSnackBar(error.toString());
 
-class _FilePreview extends StatelessWidget {
-  const _FilePreview({
-    required this.file,
-    required this.detail,
-    this.onTapThumbnail,
-  });
-
-  final FileWrapper file;
-  final String detail;
-  final VoidCallback? onTapThumbnail;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: onTapThumbnail,
-          child: FileThumbnail(file: file, size: 92),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-          child: Text(file.name, textAlign: TextAlign.center),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          detail,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: context.color.secondary),
-        ),
-      ],
-    );
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
