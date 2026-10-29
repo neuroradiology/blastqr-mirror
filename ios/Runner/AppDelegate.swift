@@ -109,7 +109,7 @@ import UIKit
     }
   }
 
-  // ISO × exposure seconds that automatic exposure settled on, before we took
+  // ISO * exposure seconds that automatic exposure settled on, before we took
   // over. Re-reading it once exposure is custom would compound the ISO boost,
   // since the camera can still report the old exposure for a few frames.
   private static var autoBrightness: Double?
