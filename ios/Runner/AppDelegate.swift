@@ -53,6 +53,10 @@ import UIKit
     FlutterMethodChannel(name: "blastqr/files", binaryMessenger: registrar.messenger())
       .setMethodCallHandler { call, result in
         switch call.method {
+        case "sharedContainerPath":
+          let group = "group.\(Bundle.main.bundleIdentifier ?? "")"
+          result(
+            FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?.path)
         case "excludeFromBackup":
           guard let path = call.arguments as? String else {
             result(FlutterError(code: "bad_args", message: "Missing path", details: nil))
