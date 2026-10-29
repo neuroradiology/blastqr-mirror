@@ -618,4 +618,18 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get debug_sample_frames =>
       'Fotogramas de muestra (rojo: ningún código leído)';
+
+  @override
+  String get qr_code => 'Código QR';
+
+  @override
+  String get filter_qr => 'QR';
+
+  @override
+  String scanned_qr_code_at(String date) {
+    return 'Código QR escaneado el $date';
+  }
+
+  @override
+  String get copied => 'Copiado';
 }

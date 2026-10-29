@@ -10,12 +10,15 @@ import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
+import 'package:blast_qr/model/scanned_qr_code.dart';
 import 'package:blast_qr/widgets/blast_chip.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:blast_qr/widgets/circle_button.dart';
 import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:blast_qr/widgets/logo_widget.dart';
+import 'package:blast_qr/widgets/qr_code_thumbnail.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 import 'package:media_scanner/media_scanner.dart';
@@ -23,7 +26,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-enum _FilterType { all, image, video, audio, document, book, other }
+enum _FilterType { all, image, video, audio, document, book, other, qr }
 
 class _DateHeader {
   final DateTime date;
@@ -44,24 +47,27 @@ class _FilesPageState extends State<FilesPage> {
   static const _chipsOverlap = 12.0;
   double cacheWidth = 100;
   List<FileWrapper> _files = [];
+  List<ScannedQrCode> _qrCodes = [];
   bool _isLoading = true;
   _FilterType _selectedFilter = _FilterType.all;
-  final Set<FileWrapper> _selectedFiles = {};
 
-  bool get _isSelecting => _selectedFiles.isNotEmpty;
+  /// Holds [FileWrapper]s and [ScannedQrCode]s.
+  final Set<Object> _selectedItems = {};
 
-  void _exitSelectionMode() => setState(() => _selectedFiles.clear());
+  bool get _isSelecting => _selectedItems.isNotEmpty;
 
-  void _onLongPressItem(FileWrapper file) {
-    setState(() => _selectedFiles.add(file));
+  void _exitSelectionMode() => setState(() => _selectedItems.clear());
+
+  void _onLongPressItem(Object item) {
+    setState(() => _selectedItems.add(item));
   }
 
-  void _toggleSelection(FileWrapper file) {
+  void _toggleSelection(Object item) {
     setState(() {
-      if (_selectedFiles.contains(file)) {
-        _selectedFiles.remove(file);
+      if (_selectedItems.contains(item)) {
+        _selectedItems.remove(item);
       } else {
-        _selectedFiles.add(file);
+        _selectedItems.add(item);
       }
     });
   }
@@ -96,6 +102,7 @@ class _FilesPageState extends State<FilesPage> {
     } else {
       _files = []; // No images found
     }
+    _qrCodes = await loadScannedQrCodes(await qrCodesDirectory());
     _isLoading = false;
     setState(() {});
   }
@@ -117,14 +124,18 @@ class _FilesPageState extends State<FilesPage> {
         types.add(_FilterType.other);
       }
     }
+    if (_qrCodes.isNotEmpty) types.add(_FilterType.qr);
     return types;
   }
 
-  List<FileWrapper> get _filteredFiles {
-    if (_selectedFilter == _FilterType.all) return _files;
+  /// [FileWrapper]s and [ScannedQrCode]s matching the filter.
+  List<Object> get _filteredItems {
+    if (_selectedFilter == _FilterType.all) return [..._files, ..._qrCodes];
+    if (_selectedFilter == _FilterType.qr) return [..._qrCodes];
     return _files.where((f) {
       switch (_selectedFilter) {
         case _FilterType.all:
+        case _FilterType.qr:
           return true;
         case _FilterType.image:
           return f.type.isImage;
@@ -150,10 +161,12 @@ class _FilesPageState extends State<FilesPage> {
     final twoYearsAgo = DateUtils.dateOnly(
       DateTime.now().subtract(const Duration(days: 365 * 2)),
     );
-    final grouped = <DateTime, List<FileWrapper>>{};
-    final olderFiles = <FileWrapper>[];
-    for (final f in _filteredFiles) {
-      final day = DateUtils.dateOnly(f.modified);
+    final grouped = <DateTime, List<Object>>{};
+    final olderFiles = <Object>[];
+    final items = _filteredItems
+      ..sort((l, r) => _dateOf(r).compareTo(_dateOf(l)));
+    for (final f in items) {
+      final day = DateUtils.dateOnly(_dateOf(f));
       if (!day.isAfter(twoYearsAgo)) {
         olderFiles.add(f);
       } else {
@@ -161,17 +174,20 @@ class _FilesPageState extends State<FilesPage> {
       }
     }
     final sortedDays = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    final items = <Object>[];
+    final listItems = <Object>[];
     for (final day in sortedDays) {
-      items.add(_DateHeader(day));
-      items.addAll(grouped[day]!);
+      listItems.add(_DateHeader(day));
+      listItems.addAll(grouped[day]!);
     }
     if (olderFiles.isNotEmpty) {
-      items.add(_DateHeader(DateTime(0), isOlder: true));
-      items.addAll(olderFiles);
+      listItems.add(_DateHeader(DateTime(0), isOlder: true));
+      listItems.addAll(olderFiles);
     }
-    return items;
+    return listItems;
   }
+
+  DateTime _dateOf(Object item) =>
+      item is ScannedQrCode ? item.scanned : (item as FileWrapper).modified;
 
   String _formatDateHeader(_DateHeader header) {
     if (header.isOlder) return context.l10n.older;
@@ -203,6 +219,8 @@ class _FilesPageState extends State<FilesPage> {
         return context.l10n.filter_book;
       case _FilterType.other:
         return context.l10n.filter_other;
+      case _FilterType.qr:
+        return context.l10n.filter_qr;
     }
   }
 
@@ -215,6 +233,7 @@ class _FilesPageState extends State<FilesPage> {
       _FilterType.document,
       _FilterType.book,
       _FilterType.other,
+      _FilterType.qr,
     ];
     final available = _availableFilters;
     final chips = orderedFilters.where(available.contains).toList();
@@ -241,7 +260,7 @@ class _FilesPageState extends State<FilesPage> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: _isSelecting
-            ? Text('${_selectedFiles.length} ${context.l10n.selected}')
+            ? Text('${_selectedItems.length} ${context.l10n.selected}')
             : const LogoWidget(),
         centerTitle: !_isSelecting,
         leading: _isSelecting
@@ -299,7 +318,7 @@ class _FilesPageState extends State<FilesPage> {
           if (_isLoading) {
             return const Center(child: CircularProgressIndicator.adaptive());
           }
-          if (_files.isEmpty) {
+          if (_files.isEmpty && _qrCodes.isEmpty) {
             return Center(
               child: Column(
                 spacing: 16,
@@ -346,18 +365,21 @@ class _FilesPageState extends State<FilesPage> {
                         ),
                       );
                     }
-                    final file = item as FileWrapper;
-                    final isSelected = _selectedFiles.contains(file);
+                    final qrCode = item is ScannedQrCode ? item : null;
+                    final file = item is FileWrapper ? item : null;
+                    final isSelected = _selectedItems.contains(item);
                     return ListTile(
                       selected: _isSelecting && isSelected,
                       onTap: () {
                         if (_isSelecting) {
-                          _toggleSelection(file);
+                          _toggleSelection(item);
+                        } else if (qrCode != null) {
+                          _onTapQrCode(qrCode);
                         } else {
-                          _onTapItem(file);
+                          _onTapItem(file!);
                         }
                       },
-                      onLongPress: () => _onLongPressItem(file),
+                      onLongPress: () => _onLongPressItem(item),
                       leading: Stack(
                         children: [
                           Container(
@@ -375,7 +397,9 @@ class _FilesPageState extends State<FilesPage> {
                               ],
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: file.buildThumbnail(context, size: 56),
+                            child: qrCode != null
+                                ? QrCodeThumbnail(text: qrCode.text, size: 56)
+                                : file!.buildThumbnail(context, size: 56),
                           ),
                           if (_isSelecting)
                             Positioned.fill(
@@ -399,11 +423,17 @@ class _FilesPageState extends State<FilesPage> {
                         ],
                       ),
                       title: Text(
-                        file.name,
+                        qrCode != null
+                            ? context.l10n.scanned_qr_code_at(
+                                DateFormat.yMd(
+                                  Localizations.localeOf(context).languageCode,
+                                ).add_Hm().format(qrCode.scanned),
+                              )
+                            : file!.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text(file.sizeInkB),
+                      subtitle: file != null ? Text(file.sizeInkB) : null,
                     );
                   }, childCount: listItems.length),
                 ),
@@ -486,7 +516,7 @@ class _FilesPageState extends State<FilesPage> {
           ListTile(
             dense: true,
             onTap: () {
-              _onTapDelete(file);
+              _onTapDelete(file.file);
             },
             title: Text(context.l10n.delete),
 
@@ -494,6 +524,54 @@ class _FilesPageState extends State<FilesPage> {
               icon: HugeIcons.strokeRoundedDelete01,
               color: context.color.primary,
             ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  void _onTapQrCode(ScannedQrCode qrCode) {
+    showSheet(
+      context: context,
+      title: context.l10n.qr_code,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Center(
+              child: SelectableText(
+                qrCode.text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+          ListTile(
+            dense: true,
+            onTap: () {
+              Navigator.of(context).pop();
+              Clipboard.setData(ClipboardData(text: qrCode.text));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(context.l10n.copied)));
+            },
+            leading: HugeIcon(
+              icon: HugeIcons.strokeRoundedCopy01,
+              color: context.color.primary,
+            ),
+            title: Text(context.l10n.copy),
+          ),
+          ListTile(
+            dense: true,
+            onTap: () {
+              _onTapDelete(qrCode.file);
+            },
+            leading: HugeIcon(
+              icon: HugeIcons.strokeRoundedDelete01,
+              color: context.color.primary,
+            ),
+            title: Text(context.l10n.delete),
           ),
           const SizedBox(height: 8),
         ],
@@ -516,48 +594,56 @@ class _FilesPageState extends State<FilesPage> {
   }
 
   void _showMultiSelectSheet() {
-    final files = _selectedFiles.toList();
+    final files = _selectedItems.whereType<FileWrapper>().toList();
+    final hasQrCodes = _selectedItems.any((item) => item is ScannedQrCode);
     showSheet(
       context: context,
       title: context.l10n.selected_options,
       body: Column(
         children: [
-          SendTile(
-            onTap: () {
-              Navigator.of(context).pop();
-              _sendSelectedFiles(files, plainSend);
-            },
-          ),
-          SendEncryptedTile(
-            onTap: () {
-              Navigator.of(context).pop();
-              _sendSelectedFiles(files, encryptedSend());
-            },
-            onLongPress: () async {
-              Navigator.of(context).pop();
-              final password = await showCustomPasswordSheet(context);
-              if (password == null || !mounted) return;
-              _sendSelectedFiles(files, (password: password, fileName: null));
-            },
-          ),
-          if (Platform.isAndroid)
-            ListTile(
-              dense: true,
+          if (!hasQrCodes) ...[
+            SendTile(
               onTap: () {
                 Navigator.of(context).pop();
-                _saveAllToDownloads(files);
+                _sendSelectedFiles(files, plainSend);
               },
-              leading: HugeIcon(
-                icon: HugeIcons.strokeRoundedDownload01,
-                color: context.color.primary,
-              ),
-              title: Text(context.l10n.save_to_downloads),
             ),
+            SendEncryptedTile(
+              onTap: () {
+                Navigator.of(context).pop();
+                _sendSelectedFiles(files, encryptedSend());
+              },
+              onLongPress: () async {
+                Navigator.of(context).pop();
+                final password = await showCustomPasswordSheet(context);
+                if (password == null || !mounted) return;
+                _sendSelectedFiles(files, (password: password, fileName: null));
+              },
+            ),
+            if (Platform.isAndroid)
+              ListTile(
+                dense: true,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _saveAllToDownloads(files);
+                },
+                leading: HugeIcon(
+                  icon: HugeIcons.strokeRoundedDownload01,
+                  color: context.color.primary,
+                ),
+                title: Text(context.l10n.save_to_downloads),
+              ),
+          ],
           ListTile(
             dense: true,
             onTap: () {
               Navigator.of(context).pop();
-              _deleteAllSelected(files);
+              _deleteAllSelected([
+                for (final item in _selectedItems)
+                  item is ScannedQrCode
+                      ? item.file
+                      : (item as FileWrapper).file,
+              ]);
             },
             leading: HugeIcon(
               icon: HugeIcons.strokeRoundedDelete01,
@@ -619,7 +705,7 @@ class _FilesPageState extends State<FilesPage> {
     }
   }
 
-  void _deleteAllSelected(List<FileWrapper> files) {
+  void _deleteAllSelected(List<File> files) {
     showMessage(
       context: context,
       title: context.l10n.delete,
@@ -629,7 +715,7 @@ class _FilesPageState extends State<FilesPage> {
       onConfirmTap: () async {
         for (final f in files) {
           try {
-            await f.file.delete();
+            await f.delete();
           } catch (_) {}
         }
         await _loadItems();
@@ -675,7 +761,7 @@ class _FilesPageState extends State<FilesPage> {
     }
   }
 
-  Future<void> _onTapDelete(FileWrapper file) async {
+  Future<void> _onTapDelete(File file) async {
     Navigator.of(context).pop();
     showMessage(
       context: context,
@@ -684,7 +770,7 @@ class _FilesPageState extends State<FilesPage> {
       confirmTitle: context.l10n.yes_delete,
       secondaryTitle: context.l10n.cancel,
       onConfirmTap: () {
-        _tryDeleteFile(file.file);
+        _tryDeleteFile(file);
       },
     );
   }
