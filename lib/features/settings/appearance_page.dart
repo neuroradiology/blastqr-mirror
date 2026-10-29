@@ -196,28 +196,28 @@ class __ColorPickerState extends State<_ColorPicker> {
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-        children: accentColorOptions.map((c) {
-          final isSelected = c == _selectedColor;
-          final outlineColor = isSelected
-              ? context.color.onSurface
-              : context.color.outline;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedColor = c;
-              });
-              widget.onPickColor(c);
-              Navigator.of(context).pop();
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: outlineColor, width: 3),
-                shape: BoxShape.circle,
-                color: c,
-              ),
-            ),
-          );
-        }).toList(),
+        children:
+            accentColorOptions.map((c) {
+              final isSelected = c == _selectedColor;
+              final outlineColor =
+                  isSelected ? context.color.onSurface : context.color.outline;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedColor = c;
+                  });
+                  widget.onPickColor(c);
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: outlineColor, width: 3),
+                    shape: BoxShape.circle,
+                    color: c,
+                  ),
+                ),
+              );
+            }).toList(),
       ),
     );
   }

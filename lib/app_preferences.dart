@@ -49,7 +49,6 @@ class AppPreferences {
       _imageCompressionSettings ?? ImageCompressionSettings.defaultSettings;
   static ResolutionPreset get cameraResolution =>
       _cameraResolution ?? defaultCameraResolution;
-
   /// Null for the camera's default.
   static int? get cameraFps => _cameraFps;
   static double get cameraZoom => _cameraZoom ?? defaultCameraZoom;
@@ -203,9 +202,10 @@ class AppPreferences {
     _imageCompressionSettings = ImageCompressionSettings.parseSafely(
       sp.getString('ic_settings'),
     );
-    _cameraResolution = sp.getInt('camera_resolution') != null
-        ? ResolutionPreset.values[sp.getInt('camera_resolution')!]
-        : defaultCameraResolution;
+    _cameraResolution =
+        sp.getInt('camera_resolution') != null
+            ? ResolutionPreset.values[sp.getInt('camera_resolution')!]
+            : defaultCameraResolution;
     _cameraFps = sp.getInt('cameraFps');
     _cameraZoom = sp.getDouble('cameraZoom') ?? defaultCameraZoom;
     _debugVideoHdr = sp.getBool('debugVideoHdr') ?? false;

@@ -229,17 +229,19 @@ class QrPainter extends CustomPainter {
     }
 
     // configure the paints
-    final outerPaint = _paintCache.firstPaint(
-      QrCodeElement.finderPatternOuter,
-      position: position,
-    )!;
+    final outerPaint =
+        _paintCache.firstPaint(
+          QrCodeElement.finderPatternOuter,
+          position: position,
+        )!;
     outerPaint.strokeWidth = metrics.pixelSize;
     outerPaint.color = const Color(0xff000000);
 
-    final innerPaint = _paintCache.firstPaint(
-      QrCodeElement.finderPatternInner,
-      position: position,
-    )!;
+    final innerPaint =
+        _paintCache.firstPaint(
+          QrCodeElement.finderPatternInner,
+          position: position,
+        )!;
     innerPaint.strokeWidth = metrics.pixelSize;
     innerPaint.color = const Color(0x00ffffff);
 

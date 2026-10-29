@@ -32,9 +32,10 @@ Future<void> sendFiles(
     context,
     createSendBundle(
       files,
-      icSettings: appSettings.alwaysCompressImages
-          ? appSettings.imageCompressionSettings
-          : null,
+      icSettings:
+          appSettings.alwaysCompressImages
+              ? appSettings.imageCompressionSettings
+              : null,
     ),
   );
   try {
@@ -79,9 +80,7 @@ Future<FileWrapper> createSendBundle(
     entries.add((name: file.name, path: file.file.path, bytes: null));
   }
 
-  final directory = Directory(
-    '${(await getTemporaryDirectory()).path}/bundles',
-  );
+  final directory = Directory('${(await getTemporaryDirectory()).path}/bundles');
   await directory.create(recursive: true);
   final timestamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
   final path = '${directory.path}/blastqr-$timestamp.zip';
@@ -106,16 +105,17 @@ String? transferTooLargeMessage(BuildContext context, FileWrapper file) {
 Future<void> showFileTooLarge(BuildContext context, String message) {
   return showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(context.l10n.file_too_large),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.l10n.ok),
+    builder:
+        (context) => AlertDialog(
+          title: Text(context.l10n.file_too_large),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(context.l10n.ok),
+            ),
+          ],
         ),
-      ],
-    ),
   );
 }
 
@@ -128,12 +128,13 @@ Future<void> _showQrPage(
   return Navigator.of(context).push(
     MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (context) => QrPage(
-        file: file,
-        bundledFiles: bundledFiles,
-        password: options.password,
-        fileName: options.fileName,
-      ),
+      builder:
+          (context) => QrPage(
+            file: file,
+            bundledFiles: bundledFiles,
+            password: options.password,
+            fileName: options.fileName,
+          ),
     ),
   );
 }
@@ -143,10 +144,11 @@ Future<T> _withProgress<T>(BuildContext context, Future<T> future) async {
   showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => const PopScope(
-      canPop: false,
-      child: Center(child: CircularProgressIndicator.adaptive()),
-    ),
+    builder:
+        (context) => const PopScope(
+          canPop: false,
+          child: Center(child: CircularProgressIndicator.adaptive()),
+        ),
   );
   try {
     return await future;

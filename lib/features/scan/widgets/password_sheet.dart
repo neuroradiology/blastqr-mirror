@@ -25,10 +25,7 @@ Future<String?> showPasswordSheet(
 }
 
 class _PasswordSheet extends StatefulWidget {
-  const _PasswordSheet({
-    required this.initialText,
-    required this.wrongPassword,
-  });
+  const _PasswordSheet({required this.initialText, required this.wrongPassword});
 
   final String initialText;
   final bool wrongPassword;

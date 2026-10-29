@@ -13,7 +13,6 @@ class AppSettings extends ChangeNotifier {
   Color accentColor;
   ImageCompressionSettings imageCompressionSettings;
   ResolutionPreset cameraResolution;
-
   /// Null for the camera's default.
   int? cameraFps;
   double cameraZoom;

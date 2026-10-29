@@ -31,9 +31,10 @@ class ImageCompressionSettings {
 
   factory ImageCompressionSettings.fromMap(Map<String, dynamic> map) {
     return ImageCompressionSettings(
-      outputFormat: map['outputFormat'] != null
-          ? ImageCompressionOutputFormat.values.byName(map['outputFormat'])
-          : defaultSettings.outputFormat,
+      outputFormat:
+          map['outputFormat'] != null
+              ? ImageCompressionOutputFormat.values.byName(map['outputFormat'])
+              : defaultSettings.outputFormat,
       quality: map['quality'] as int,
       minSize: map['minSize'] as int,
     );

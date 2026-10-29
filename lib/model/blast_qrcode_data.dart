@@ -20,13 +20,8 @@ enum FrameVerdict {
 }
 
 /// Values that stay the same for every frame of one transfer.
-typedef StreamKey = ({
-  int sessionId,
-  int transferLength,
-  int symbolSize,
-  int flags,
-  int kind,
-});
+typedef StreamKey =
+    ({int sessionId, int transferLength, int symbolSize, int flags, int kind});
 
 /// One BlastQR frame: a header plus one RaptorQ packet.
 ///

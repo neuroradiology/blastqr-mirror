@@ -99,9 +99,10 @@ class _ImageCompressionSettingsPageState
                 activeTrackColor: context.color.primary,
                 onChanged: (enabled) {
                   setState(() {
-                    _minSize = enabled
-                        ? ImageCompressionSettings.defaultSettings.minSize
-                        : downscaleCutoff;
+                    _minSize =
+                        enabled
+                            ? ImageCompressionSettings.defaultSettings.minSize
+                            : downscaleCutoff;
                     _buildAndUpdateSettings();
                   });
                 },

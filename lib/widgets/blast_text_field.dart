@@ -106,26 +106,29 @@ class _BlastTextFieldState extends State<BlastTextField> {
     return Focus(
       canRequestFocus: false,
       descendantsAreFocusable: false,
-      child: widget.obscureText
-          ? IconButton(
-              icon: Icon(
-                _obscureTextIsVisible ? Icons.visibility_off : Icons.visibility,
+      child:
+          widget.obscureText
+              ? IconButton(
+                icon: Icon(
+                  _obscureTextIsVisible
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureTextIsVisible = !_obscureTextIsVisible;
+                  });
+                },
+              )
+              : IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  widget.controller?.clear();
+                  setState(() {
+                    _hasText = false;
+                  });
+                },
               ),
-              onPressed: () {
-                setState(() {
-                  _obscureTextIsVisible = !_obscureTextIsVisible;
-                });
-              },
-            )
-          : IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                widget.controller?.clear();
-                setState(() {
-                  _hasText = false;
-                });
-              },
-            ),
     );
   }
 }
