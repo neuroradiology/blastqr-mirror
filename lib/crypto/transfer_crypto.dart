@@ -10,5 +10,8 @@ abstract final class TransferCrypto {
       encryptTransfer(plain: plain, password: normalizePassword(password));
 
   static Future<Uint8List> decrypt(Uint8List envelope, String password) =>
-      decryptTransfer(envelope: envelope, password: normalizePassword(password));
+      decryptTransfer(
+        envelope: envelope,
+        password: normalizePassword(password),
+      );
 }

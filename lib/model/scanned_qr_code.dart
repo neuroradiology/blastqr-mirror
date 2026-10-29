@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
@@ -8,6 +9,12 @@ class ScannedQrCode {
   final File file;
   final String text;
   final DateTime scanned;
+
+  int get size => utf8.encode(text).length;
+
+  /// Short codes are well under 1 KB, so they show in bytes.
+  String get sizeLabel =>
+      size < 1000 ? '$size B' : '${(size / 1000).toStringAsFixed(0)} KB';
 
   ScannedQrCode({
     required this.file,

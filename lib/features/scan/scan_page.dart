@@ -796,26 +796,33 @@ class _ScanPageState extends State<ScanPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: SelectableText(
-                    content,
-                    style: const TextStyle(fontSize: 16),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: context.color.surfaceContainer,
+                border: Border.all(color: context.color.outline),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      content,
+                      style: const TextStyle(fontSize: 16),
+                    ),
                   ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  tooltip: context.l10n.copy,
-                  onPressed: () => _copyToClipboard(content),
-                  icon: HugeIcon(
-                    icon: HugeIcons.strokeRoundedCopy01,
-                    color: context.color.primary,
-                    size: 20,
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: context.l10n.copy,
+                    onPressed: () => _copyToClipboard(content),
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedCopy01,
+                      color: context.color.primary,
+                      size: 20,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(

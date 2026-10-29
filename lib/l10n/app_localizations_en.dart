@@ -625,8 +625,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filter_qr => 'QR';
 
   @override
-  String scanned_qr_code_at(String date) {
-    return 'Scanned QR code at $date';
+  String scanned_at(String date) {
+    return 'Scanned at $date';
   }
 
   @override

@@ -213,7 +213,7 @@
   "debug_sample_frames": "Sample frames (red: no code read)",
   "qr_code": "QR code",
   "filter_qr": "QR",
-  "scanned_qr_code_at": "Scanned QR code at {date}",
-  "@scanned_qr_code_at": {"placeholders": {"date": {"type": "String"}}},
+  "scanned_at": "Scanned at {date}",
+  "@scanned_at": {"placeholders": {"date": {"type": "String"}}},
   "copied": "Copied"
 }

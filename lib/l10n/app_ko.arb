@@ -187,6 +187,6 @@
   "debug_sample_frames": "샘플 프레임 (빨간색: 읽은 코드 없음)",
   "qr_code": "QR 코드",
   "filter_qr": "QR",
-  "scanned_qr_code_at": "{date}에 스캔한 QR 코드",
+  "scanned_at": "{date}에 스캔함",
   "copied": "복사됨"
 }

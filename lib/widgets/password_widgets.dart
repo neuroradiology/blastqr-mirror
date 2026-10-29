@@ -36,10 +36,9 @@ class _PasswordButtonState extends State<PasswordButton> {
             ),
           ),
           HugeIcon(
-            icon:
-                _visible
-                    ? HugeIcons.strokeRoundedViewOff
-                    : HugeIcons.strokeRoundedView,
+            icon: _visible
+                ? HugeIcons.strokeRoundedViewOff
+                : HugeIcons.strokeRoundedView,
             size: 20,
             color: context.color.onSurface,
           ),

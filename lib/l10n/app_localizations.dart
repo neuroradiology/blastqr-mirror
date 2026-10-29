@@ -1212,11 +1212,11 @@ abstract class AppLocalizations {
   /// **'QR'**
   String get filter_qr;
 
-  /// No description provided for @scanned_qr_code_at.
+  /// No description provided for @scanned_at.
   ///
   /// In en, this message translates to:
-  /// **'Scanned QR code at {date}'**
-  String scanned_qr_code_at(String date);
+  /// **'Scanned at {date}'**
+  String scanned_at(String date);
 
   /// No description provided for @copied.
   ///

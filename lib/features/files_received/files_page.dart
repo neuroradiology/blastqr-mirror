@@ -424,7 +424,7 @@ class _FilesPageState extends State<FilesPage> {
                       ),
                       title: Text(
                         qrCode != null
-                            ? context.l10n.scanned_qr_code_at(
+                            ? context.l10n.scanned_at(
                                 DateFormat.yMd(
                                   Localizations.localeOf(context).languageCode,
                                 ).add_Hm().format(qrCode.scanned),
@@ -433,7 +433,7 @@ class _FilesPageState extends State<FilesPage> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: file != null ? Text(file.sizeInkB) : null,
+                      subtitle: Text(qrCode?.sizeLabel ?? file!.sizeInkB),
                     );
                   }, childCount: listItems.length),
                 ),
@@ -537,8 +537,22 @@ class _FilesPageState extends State<FilesPage> {
       title: context.l10n.qr_code,
       body: Column(
         children: [
+          Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(60),
+                  blurRadius: 1,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: QrCodeThumbnail(text: qrCode.text, size: 150),
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: Center(
               child: SelectableText(
                 qrCode.text,
@@ -593,57 +607,55 @@ class _FilesPageState extends State<FilesPage> {
     sendFiles(context, [file], options);
   }
 
-  void _showMultiSelectSheet() {
-    final files = _selectedItems.whereType<FileWrapper>().toList();
-    final hasQrCodes = _selectedItems.any((item) => item is ScannedQrCode);
+  Future<void> _showMultiSelectSheet() async {
+    final files = await Future.wait([
+      for (final item in _selectedItems)
+        item is ScannedQrCode
+            ? item.file.toFileWrapper()
+            : Future.value(item as FileWrapper),
+    ]);
+    if (!mounted) return;
     showSheet(
       context: context,
       title: context.l10n.selected_options,
       body: Column(
         children: [
-          if (!hasQrCodes) ...[
-            SendTile(
+          SendTile(
+            onTap: () {
+              Navigator.of(context).pop();
+              _sendSelectedFiles(files, plainSend);
+            },
+          ),
+          SendEncryptedTile(
+            onTap: () {
+              Navigator.of(context).pop();
+              _sendSelectedFiles(files, encryptedSend());
+            },
+            onLongPress: () async {
+              Navigator.of(context).pop();
+              final password = await showCustomPasswordSheet(context);
+              if (password == null || !mounted) return;
+              _sendSelectedFiles(files, (password: password, fileName: null));
+            },
+          ),
+          if (Platform.isAndroid)
+            ListTile(
+              dense: true,
               onTap: () {
                 Navigator.of(context).pop();
-                _sendSelectedFiles(files, plainSend);
+                _saveAllToDownloads(files);
               },
-            ),
-            SendEncryptedTile(
-              onTap: () {
-                Navigator.of(context).pop();
-                _sendSelectedFiles(files, encryptedSend());
-              },
-              onLongPress: () async {
-                Navigator.of(context).pop();
-                final password = await showCustomPasswordSheet(context);
-                if (password == null || !mounted) return;
-                _sendSelectedFiles(files, (password: password, fileName: null));
-              },
-            ),
-            if (Platform.isAndroid)
-              ListTile(
-                dense: true,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _saveAllToDownloads(files);
-                },
-                leading: HugeIcon(
-                  icon: HugeIcons.strokeRoundedDownload01,
-                  color: context.color.primary,
-                ),
-                title: Text(context.l10n.save_to_downloads),
+              leading: HugeIcon(
+                icon: HugeIcons.strokeRoundedDownload01,
+                color: context.color.primary,
               ),
-          ],
+              title: Text(context.l10n.save_to_downloads),
+            ),
           ListTile(
             dense: true,
             onTap: () {
               Navigator.of(context).pop();
-              _deleteAllSelected([
-                for (final item in _selectedItems)
-                  item is ScannedQrCode
-                      ? item.file
-                      : (item as FileWrapper).file,
-              ]);
+              _deleteAllSelected([for (final f in files) f.file]);
             },
             leading: HugeIcon(
               icon: HugeIcons.strokeRoundedDelete01,

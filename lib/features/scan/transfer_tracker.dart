@@ -96,8 +96,7 @@ class TransferTracker {
 
   /// Whether the current transfer is still arriving (or being saved).
   bool _isActive(DateTime now, bool busy) =>
-      _current != null &&
-      (busy || now.difference(_lastFrameAt!) < switchAfter);
+      _current != null && (busy || now.difference(_lastFrameAt!) < switchAfter);
 
   /// Forgets the current transfer.
   void reset() {

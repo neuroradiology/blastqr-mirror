@@ -607,8 +607,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get filter_qr => 'QR';
 
   @override
-  String scanned_qr_code_at(String date) {
-    return '$date에 스캔한 QR 코드';
+  String scanned_at(String date) {
+    return '$date에 스캔함';
   }
 
   @override

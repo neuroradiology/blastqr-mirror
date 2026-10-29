@@ -41,8 +41,8 @@ class QrTwinkleBackground extends StatefulWidget {
   static const Duration cycle = Duration(seconds: 48);
 
   /// The shader, compiled once for the app.
-  static final Future<ui.FragmentProgram> _program = ui
-      .FragmentProgram.fromAsset('shaders/qr_twinkle.frag');
+  static final Future<ui.FragmentProgram> _program =
+      ui.FragmentProgram.fromAsset('shaders/qr_twinkle.frag');
 
   @override
   State<QrTwinkleBackground> createState() => _QrTwinkleBackgroundState();

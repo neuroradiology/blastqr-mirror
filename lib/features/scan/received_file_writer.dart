@@ -141,7 +141,10 @@ class _ContainerSink implements Sink<List<int>> {
   void add(List<int> chunk) {
     var offset = 0;
     while (offset < chunk.length && _header.length < _headerLength) {
-      final take = math.min(_headerLength - _header.length, chunk.length - offset);
+      final take = math.min(
+        _headerLength - _header.length,
+        chunk.length - offset,
+      );
       _header.add(chunk.sublist(offset, offset + take));
       offset += take;
       _readMetadataLength();
