@@ -49,11 +49,6 @@ dependencies:
   url_launcher: ^6.3.3
   image: ^4.8.0
 
-# Patched ReaderWidget: adds `fps`, `initialZoom` and `onFrame` (debug stats).
-dependency_overrides:
-  flutter_zxing:
-    path: ../flutter_zxing
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

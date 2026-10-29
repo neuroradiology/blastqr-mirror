@@ -9,6 +9,7 @@ import 'package:blast_qr/features/scan/decode_stats.dart';
 import 'package:blast_qr/features/scan/received_file_writer.dart';
 import 'package:blast_qr/features/scan/scan_camera.dart';
 import 'package:blast_qr/features/scan/transfer_tracker.dart';
+import 'package:blast_qr/features/scan/widgets/qr_scanner.dart';
 import 'package:blast_qr/features/scan/widgets/password_sheet.dart';
 import 'package:blast_qr/features/settings/settings_page.dart';
 import 'package:blast_qr/file_badge_count.dart';
@@ -191,31 +192,21 @@ class _ScanPageState extends State<ScanPage> {
             GestureDetector(
               onTapUp: (details) => _focusAt(details.localPosition),
               child: _showsReaderWidget && _cameraLoaded
-                  // ReaderWidget outlines codes in primaryColor, which a
+                  // The scanner outlines codes in primaryColor, which a
                   // dark theme sets to the surface color.
                   ? Builder(
                       builder: (context) => Theme(
                         data: Theme.of(
                           context,
                         ).copyWith(primaryColor: context.color.primary),
-                        child: ReaderWidget(
+                        child: QrScanner(
                           key: _readerKey,
-                          scanDelay: Duration.zero,
-                          scanDelaySuccess: Duration.zero,
-                          codeFormat: Format.qrCode,
-                          cropPercent: 1.0,
-                          showGallery: false,
-                          showToggleCamera: false,
-                          showFlashlight: false,
-                          tryRotate: false,
-                          isMultiScan: true,
-                          onMultiScan: _handleMultiscan,
-                          onScan: _handleScan,
-                          onControllerCreated: _onCameraControllerCreated,
-                          onFrame: DecodeStats.instance.record,
                           resolution: _cameraResolution,
                           fps: _cameraFps,
-                          initialZoom: appSettings.cameraZoom,
+                          zoom: appSettings.cameraZoom,
+                          onCodes: _handleMultiscan,
+                          onCameraChanged: _onCameraChanged,
+                          onFrame: DecodeStats.instance.record,
                         ),
                       ),
                     )
@@ -833,7 +824,7 @@ class _ScanPageState extends State<ScanPage> {
         (_readerKey.currentContext?.findRenderObject() as RenderBox?)?.size;
     if (size == null || size.isEmpty) return;
 
-    // ReaderWidget cover-fits the preview, centered in its box.
+    // QrScanner cover-fits the preview, centered in its box.
     final value = controller.value;
     final orientation =
         value.lockedCaptureOrientation ?? value.deviceOrientation;
@@ -876,27 +867,10 @@ class _ScanPageState extends State<ScanPage> {
       ? 60
       : null;
 
-  void _onCameraControllerCreated(
-    CameraController? controller,
-    Exception? error,
-  ) {
+  void _onCameraChanged(CameraController? controller) {
     _cameraController = controller;
     _focusLocked = false;
     _configureCamera();
-    // The camera follows the phone's physical orientation even though the UI
-    // is locked to portrait, which turns the preview when held sideways. iPads
-    // run the UI in landscape and rotate it, so they keep following the device.
-    final isIpad =
-        Platform.isIOS && MediaQuery.sizeOf(context).shortestSide >= 600;
-    if (controller != null &&
-        (Platform.isAndroid || Platform.isIOS) &&
-        !isIpad) {
-      unawaited(
-        controller
-            .lockCaptureOrientation(DeviceOrientation.portraitUp)
-            .catchError((Object e) => debugPrint('Orientation lock failed: $e')),
-      );
-    }
   }
 
   /// A fixed exposure from the Debug page, which automatic exposure mustn't
