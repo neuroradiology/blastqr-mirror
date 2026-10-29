@@ -475,13 +475,6 @@ class AppLocalizationsCa extends AppLocalizations {
   }
 
   @override
-  String get camera_60fps => 'Càmera a 60 FPS';
-
-  @override
-  String get camera_60fps_hint =>
-      'Experimental. Pot no funcionar a tots els dispositius.';
-
-  @override
   String get debug => 'Depuració';
 
   @override
@@ -490,4 +483,49 @@ class AppLocalizationsCa extends AppLocalizations {
   @override
   String get camera_zoom_hint =>
       'Fer zoom permet llegir els codis des de més lluny, on la càmera encara pot enfocar. Ajuda en mòbils que no enfoquen de prop.';
+
+  @override
+  String get advanced => 'Avançat';
+
+  @override
+  String get allow_video_hdr => 'Permet el vídeo HDR';
+
+  @override
+  String get allow_video_hdr_hint =>
+      'Desactivat per defecte. L\'HDR pot barrejar dos codis en un mateix fotograma.';
+
+  @override
+  String get exposure_time => 'Temps d\'exposició';
+
+  @override
+  String get exposure_time_hint =>
+      'Les exposicions llargues barregen dos codis en un fotograma quan l\'emissor canvia de codi durant la captura. Una exposició fixa puja l\'ISO per mantenir la brillantor, així que la imatge té més soroll.';
+
+  @override
+  String exposure_auto_capped(String ms) {
+    return 'Automàtic, màx. $ms ms (per defecte)';
+  }
+
+  @override
+  String get exposure_auto => 'Automàtic, sense límit';
+
+  @override
+  String exposure_fixed(String ms) {
+    return 'Fix $ms ms';
+  }
+
+  @override
+  String get camera_fps => 'Fotogrames per segon de la càmera';
+
+  @override
+  String get camera_fps_hint =>
+      'Més fotogrames donen a l\'escàner més oportunitats de llegir cada codi. Només es mostren els que admet aquest mòbil amb la resolució actual.';
+
+  @override
+  String get fps_default => 'Per defecte';
+
+  @override
+  String fps_auto(String fps) {
+    return 'Màxim disponible ($fps FPS)';
+  }
 }

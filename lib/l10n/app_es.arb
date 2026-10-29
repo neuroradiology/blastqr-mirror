@@ -144,9 +144,19 @@
   "custom_password_msg": "El archivo se cifrará con la siguiente contraseña.",
   "files_count": "{count, plural, =1{1 archivo} other{{count} archivos}}",
   "sending_files_count": "Enviando {count} archivos",
-  "camera_60fps": "Cámara a 60 FPS",
-  "camera_60fps_hint": "Experimental. Puede no funcionar en todos los dispositivos.",
   "debug": "Depuración",
   "camera_zoom": "Zoom de la cámara",
-  "camera_zoom_hint": "Hacer zoom permite leer los códigos desde más lejos, donde la cámara aún puede enfocar. Ayuda en móviles que no enfocan de cerca."
+  "camera_zoom_hint": "Hacer zoom permite leer los códigos desde más lejos, donde la cámara aún puede enfocar. Ayuda en móviles que no enfocan de cerca.",
+  "advanced": "Avanzado",
+  "allow_video_hdr": "Permitir vídeo HDR",
+  "allow_video_hdr_hint": "Desactivado por defecto. El HDR puede mezclar dos códigos en un mismo fotograma.",
+  "exposure_time": "Tiempo de exposición",
+  "exposure_time_hint": "Las exposiciones largas mezclan dos códigos en un fotograma cuando el emisor cambia de código durante la captura. Una exposición fija sube el ISO para mantener el brillo, así que la imagen tiene más ruido.",
+  "exposure_auto_capped": "Automático, máx. {ms} ms (por defecto)",
+  "exposure_auto": "Automático, sin límite",
+  "exposure_fixed": "Fijo {ms} ms",
+  "camera_fps": "Fotogramas por segundo de la cámara",
+  "camera_fps_hint": "Más fotogramas dan al escáner más oportunidades de leer cada código. Solo se muestran los que admite este móvil con la resolución actual.",
+  "fps_default": "Por defecto",
+  "fps_auto": "Máximo disponible ({fps} FPS)"
 }

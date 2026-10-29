@@ -162,9 +162,22 @@
       }
     }
   },
-  "camera_60fps": "60 FPS camera",
-  "camera_60fps_hint": "Experimental. May not work on every device.",
   "debug": "Debug",
   "camera_zoom": "Camera zoom",
-  "camera_zoom_hint": "Zooming in lets the camera read codes from further away, where it can still focus. Helps on phones that can't focus up close."
+  "camera_zoom_hint": "Zooming in lets the camera read codes from further away, where it can still focus. Helps on phones that can't focus up close.",
+  "advanced": "Advanced",
+  "allow_video_hdr": "Allow video HDR",
+  "allow_video_hdr_hint": "Off by default. HDR can blend two codes into one frame.",
+  "exposure_time": "Exposure time",
+  "exposure_time_hint": "Long exposures blend two codes into one frame when the sender changes code mid-capture. A fixed exposure raises ISO to keep the brightness, so the image gets noisier.",
+  "exposure_auto_capped": "Automatic, max {ms} ms (default)",
+  "@exposure_auto_capped": {"placeholders": {"ms": {"type": "String"}}},
+  "exposure_auto": "Automatic, no limit",
+  "exposure_fixed": "Fixed {ms} ms",
+  "@exposure_fixed": {"placeholders": {"ms": {"type": "String"}}},
+  "camera_fps": "Camera frame rate",
+  "camera_fps_hint": "Higher rates give the scanner more chances to read each code. Only the rates this phone supports at the current resolution are listed.",
+  "fps_default": "Default",
+  "fps_auto": "Highest available ({fps} FPS)",
+  "@fps_auto": {"placeholders": {"fps": {"type": "String"}}}
 }

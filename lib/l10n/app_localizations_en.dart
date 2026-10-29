@@ -474,12 +474,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get camera_60fps => '60 FPS camera';
-
-  @override
-  String get camera_60fps_hint => 'Experimental. May not work on every device.';
-
-  @override
   String get debug => 'Debug';
 
   @override
@@ -488,4 +482,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get camera_zoom_hint =>
       'Zooming in lets the camera read codes from further away, where it can still focus. Helps on phones that can\'t focus up close.';
+
+  @override
+  String get advanced => 'Advanced';
+
+  @override
+  String get allow_video_hdr => 'Allow video HDR';
+
+  @override
+  String get allow_video_hdr_hint =>
+      'Off by default. HDR can blend two codes into one frame.';
+
+  @override
+  String get exposure_time => 'Exposure time';
+
+  @override
+  String get exposure_time_hint =>
+      'Long exposures blend two codes into one frame when the sender changes code mid-capture. A fixed exposure raises ISO to keep the brightness, so the image gets noisier.';
+
+  @override
+  String exposure_auto_capped(String ms) {
+    return 'Automatic, max $ms ms (default)';
+  }
+
+  @override
+  String get exposure_auto => 'Automatic, no limit';
+
+  @override
+  String exposure_fixed(String ms) {
+    return 'Fixed $ms ms';
+  }
+
+  @override
+  String get camera_fps => 'Camera frame rate';
+
+  @override
+  String get camera_fps_hint =>
+      'Higher rates give the scanner more chances to read each code. Only the rates this phone supports at the current resolution are listed.';
+
+  @override
+  String get fps_default => 'Default';
+
+  @override
+  String fps_auto(String fps) {
+    return 'Highest available ($fps FPS)';
+  }
 }

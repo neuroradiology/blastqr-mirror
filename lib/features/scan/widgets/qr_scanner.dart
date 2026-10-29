@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:blast_qr/features/scan/scan_camera.dart';
 import 'package:camera/camera.dart' hide ImageFormat;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,7 +24,7 @@ class QrScanner extends StatefulWidget {
 
   final ResolutionPreset resolution;
 
-  /// Null keeps the platform default.
+  /// Null picks the highest supported rate, see [ScanCamera.highestFrameRate].
   final int? fps;
 
   /// Starting zoom, clamped to what the camera supports. Pinching starts here.
@@ -40,13 +41,26 @@ class QrScanner extends StatefulWidget {
   final void Function(Duration? decodeTime, CameraImage image)? onFrame;
 
   @override
-  State<QrScanner> createState() => _QrScannerState();
+  State<QrScanner> createState() => QrScannerState();
 }
 
-class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
+class QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
   // Teardown blocks opening the next camera, so no step may wait forever on
   // an unresponsive platform.
   static const _teardownTimeout = Duration(seconds: 2);
+
+  // When the sender shows codes at the camera's frame rate, every frame can
+  // land on a code change and read nothing until the timing shifts. Seen on a
+  // Galaxy S22 at 30 FPS. Reopening the camera restarts its frame timing. The
+  // wait doubles while nothing is read, so a camera pointed at no code isn't
+  // reopened every few seconds. Once enough different codes were read the
+  // timing works, so the camera is kept until it's reopened for another reason.
+  static const _firstRestartAfter = Duration(seconds: 3);
+  static const _maxRestartAfter = Duration(seconds: 6);
+  static const _keepAfterCodes = 40;
+  Duration _restartAfter = _firstRestartAfter;
+  final _sinceLastCode = Stopwatch();
+  final _differentCodes = <String>{};
 
   CameraController? _controller;
 
@@ -92,6 +106,13 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
     }
   }
 
+  /// Reopens the camera, for when its frame timing keeps landing on code
+  /// changes.
+  void restart() {
+    _restartAfter = _firstRestartAfter;
+    unawaited(_open());
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
@@ -135,6 +156,8 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
     final CameraController controller;
     try {
       final cameras = await availableCameras();
+      final fps =
+          widget.fps ?? await ScanCamera.highestFrameRate(widget.resolution);
       if (!isCurrent() || cameras.isEmpty) return;
       final camera = cameras.firstWhere(
         (c) => c.lensDirection == CameraLensDirection.back,
@@ -144,7 +167,7 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
         camera,
         widget.resolution,
         enableAudio: false,
-        fps: widget.fps,
+        fps: fps,
         // Frames the decoder can read directly: luminance first on Android,
         // BGRA on iOS. Left unset, some Android devices deliver NV21.
         imageFormatGroup: Platform.isAndroid
@@ -168,6 +191,10 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
       await _lockOrientation(controller);
       await _readZoomRange(controller);
       if (!isCurrent()) return;
+      _sinceLastCode
+        ..reset()
+        ..start();
+      _differentCodes.clear();
       await controller.startImageStream((image) => _onImage(image, generation));
       if (!isCurrent()) return;
       setState(() {});
@@ -289,7 +316,27 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
       final decodeTime = stopwatch.elapsed;
       if (generation != _generation || !mounted) return;
 
+      if (codes.codes.isEmpty &&
+          (Platform.isAndroid || Platform.isIOS) &&
+          _differentCodes.length < _keepAfterCodes &&
+          _sinceLastCode.elapsed > _restartAfter) {
+        debugPrint('QrScanner: nothing read for $_restartAfter, restarting');
+        _restartAfter = _restartAfter * 2 > _maxRestartAfter
+            ? _maxRestartAfter
+            : _restartAfter * 2;
+        unawaited(_open());
+        return;
+      }
       if (codes.codes.isNotEmpty) {
+        _sinceLastCode.reset();
+        _restartAfter = _firstRestartAfter;
+        if (_differentCodes.length < _keepAfterCodes) {
+          for (final code in codes.codes) {
+            _differentCodes.add(
+              code.text ?? String.fromCharCodes(code.rawBytes ?? const []),
+            );
+          }
+        }
         widget.onCodes(codes);
         if (!mounted) return;
         setState(() => _results = codes);

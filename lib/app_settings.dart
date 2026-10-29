@@ -13,7 +13,8 @@ class AppSettings extends ChangeNotifier {
   Color accentColor;
   ImageCompressionSettings imageCompressionSettings;
   ResolutionPreset cameraResolution;
-  bool camera60Fps;
+  /// Null for the camera's default.
+  int? cameraFps;
   double cameraZoom;
   bool debugVideoHdr;
 
@@ -34,7 +35,7 @@ class AppSettings extends ChangeNotifier {
       accentColor = AppPreferences.accentColor,
       imageCompressionSettings = AppPreferences.imageCompressionSettings,
       cameraResolution = AppPreferences.cameraResolution,
-      camera60Fps = AppPreferences.camera60Fps,
+      cameraFps = AppPreferences.cameraFps,
       cameraZoom = AppPreferences.cameraZoom,
       debugVideoHdr = AppPreferences.debugVideoHdr,
       debugExposureMs = AppPreferences.debugExposureMs,
@@ -87,9 +88,9 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateCamera60Fps(bool value) {
-    AppPreferences.setCamera60Fps(value);
-    camera60Fps = value;
+  void updateCameraFps(int? value) {
+    AppPreferences.setCameraFps(value);
+    cameraFps = value;
     notifyListeners();
   }
 

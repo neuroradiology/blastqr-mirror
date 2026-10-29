@@ -121,6 +121,21 @@ class _SettingsPageState extends State<SettingsPage> {
           title: context.l10n.receiving_settings,
           page: const ReceivingSettingsPage(),
         ),
+        _detailTile(
+          context,
+          index: 3,
+          icon: HugeIcons.strokeRoundedHelpCircle,
+          title: context.l10n.help,
+          page: const HelpPage(),
+        ),
+        if (canScanWithCamera)
+          _detailTile(
+            context,
+            index: 4,
+            icon: HugeIcons.strokeRoundedBug02,
+            title: context.l10n.debug,
+            page: const DebugPage(),
+          ),
         Builder(
           builder: (tileContext) => ListTile(
             shape: RoundedRectangleBorder(
@@ -144,21 +159,6 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
         ),
-        _detailTile(
-          context,
-          index: 3,
-          icon: HugeIcons.strokeRoundedHelpCircle,
-          title: context.l10n.help,
-          page: const HelpPage(),
-        ),
-        if (canScanWithCamera)
-          _detailTile(
-            context,
-            index: 4,
-            icon: HugeIcons.strokeRoundedBug02,
-            title: context.l10n.debug,
-            page: const DebugPage(),
-          ),
         const SizedBox(height: 16),
       ],
     );

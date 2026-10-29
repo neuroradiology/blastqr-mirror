@@ -1,18 +1,14 @@
 import 'dart:io';
 
-import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/debug_channel.dart';
 import 'package:blast_qr/features/scan/decode_stats.dart';
-import 'package:blast_qr/features/scan/scan_camera.dart';
 import 'package:blast_qr/features/settings/widgets/setting_group_title.dart';
 import 'package:blast_qr/l10n/extension.dart';
-import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 // Developer-only page, so the text in it isn't translated.
@@ -60,20 +56,27 @@ class DebugPage extends StatelessWidget {
                   'Supported frame rates',
                   DebugChannel.backCameraFpsRanges,
                 ),
-              if (Platform.isIOS) const _IphoneExperiments(),
+              SwitchListTile.adaptive(
+                contentPadding: const EdgeInsetsDirectional.only(start: 16),
+                title: const Text('Save sample frames'),
+                subtitle: const Text(
+                  'Keeps a few camera frames per transfer, to look at or '
+                  'share. Uses a few MB per transfer.',
+                ),
+                value: stats.saveFrames,
+                onChanged: stats.updateSaveFrames,
+                activeTrackColor: context.color.primary,
+              ),
               const SettingGroupTitle(title: 'Last transfers'),
               if (stats.transfers.isEmpty)
                 const ListTile(title: Text('No transfers yet')),
-              for (final (i, transfer) in stats.transfers.indexed)
-                _TransferTile(transfer, initiallyExpanded: i == 0),
+              for (final transfer in stats.transfers) _TransferTile(transfer),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Text(
-                  'Kept in memory for the last 5 transfers. Per-second code '
-                  'and data rates only count time spent receiving. "New codes" '
-                  'is out of all codes read; the rest are repeats. Decode time '
-                  'covers every frame, with or without a QR code, including '
-                  'the hand-off to the decoder isolate.',
+                  'The last 5 transfers, kept in memory. Sharing includes '
+                  'every detail. Useful codes are ones read for the first '
+                  'time; their rates only count time spent receiving.',
                   style: TextStyle(color: context.color.outline),
                 ),
               ),
@@ -97,7 +100,8 @@ class DebugPage extends StatelessWidget {
         'Supported frame rates: ${await _orUnavailable(DebugChannel.backCameraFpsRanges)}',
       for (final (i, t) in stats.transfers.indexed) ...[
         '',
-        '## Transfer ${i + 1}: ${_transferTitle(t)}',
+        '## Transfer ${i + 1}: ${_startTime(t)} · ${_transferSummary(t)}'
+            '${t.nearOptimal ? ' · near optimal' : ''}',
         'Camera: ${t.camera}',
         for (final (label, value) in _transferRows(t)) '$label: $value',
       ],
@@ -140,71 +144,33 @@ class DebugPage extends StatelessWidget {
       value.catchError((_) => 'Unavailable');
 }
 
-/// Ways to undo the iPhone camera defaults, for comparing. They apply right
-/// away and are part of each transfer's camera label.
-class _IphoneExperiments extends StatelessWidget {
-  const _IphoneExperiments();
-
-  static const _exposures = <double?>[null, 0, 4, 2, 1, 0.5];
-
-  static String _label(double? ms) => switch (ms) {
-    null => 'Automatic, max ${ScanCamera.defaultMaxExposureMs} ms (default)',
-    0 => 'Automatic, no limit',
-    final ms => 'Fixed $ms ms',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = context.watch<AppSettings>();
-    return Column(
-      children: [
-        const SettingGroupTitle(title: 'iPhone camera experiments'),
-        SwitchListTile.adaptive(
-          title: const Text('Allow video HDR'),
-          subtitle: const Text('Off by default'),
-          value: settings.debugVideoHdr,
-          onChanged: settings.updateDebugVideoHdr,
-          activeTrackColor: context.color.primary,
-        ),
-        ListTile(
-          title: const Text('Exposure time'),
-          subtitle: Text(_label(settings.debugExposureMs)),
-          onTap: () => showPickerSheet(
-            context,
-            title: 'Exposure time',
-            message:
-                'Long exposures blend two codes into one frame when the '
-                'sender changes code mid-capture. A fixed exposure raises ISO '
-                'to keep the brightness, so the image gets noisier.',
-            selectedItemIndex: _exposures.indexOf(settings.debugExposureMs),
-            items: _exposures.map(_label).toList(),
-            onItemTap: (i) => settings.updateDebugExposureMs(_exposures[i]),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _TransferTile extends StatelessWidget {
-  const _TransferTile(this.transfer, {required this.initiallyExpanded});
+  const _TransferTile(this.transfer);
 
   final TransferStats transfer;
-  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
     final t = transfer;
     return ExpansionTile(
+      tilePadding: const EdgeInsetsDirectional.only(start: 16),
       // Keyed by start time, so a new transfer at the top doesn't take over
       // the expanded state of the one that was there.
       key: ValueKey(t.started),
-      initiallyExpanded: initiallyExpanded,
       shape: const Border(),
-      title: Text(_transferTitle(t)),
-      subtitle: Text('${t.camera} · ${_fps(t.newCodesPerSecond)} new codes/s'),
+      title: Row(
+        children: [
+          Flexible(child: Text(_transferSummary(t))),
+          if (t.nearOptimal)
+            const Padding(
+              padding: EdgeInsets.only(left: 4),
+              child: Icon(Icons.check_circle, size: 16, color: Colors.green),
+            ),
+        ],
+      ),
+      subtitle: Text(_startTime(t)),
       children: [
-        for (final (label, value) in _transferRows(t)) _Row(label, value),
+        for (final (label, value) in _summaryRows(t)) _Row(label, value),
         if (t.savedFrames.isNotEmpty)
           _FrameStrip(t.savedFrames, maxCodes: t.maxCodesPerFrame),
       ],
@@ -242,9 +208,8 @@ class _FrameStrip extends StatelessWidget {
         children: [
           Text(
             maxCodes > 1
-                ? 'Frames the decoder saw (red: fewer codes than the best '
-                      'frame, $maxCodes)'
-                : 'Frames the decoder saw (red: no code read)',
+                ? 'Sample frames (red: fewer than $maxCodes codes read)'
+                : 'Sample frames (red: no code read)',
             style: TextStyle(color: context.color.outline),
           ),
           SizedBox(
@@ -258,6 +223,8 @@ class _FrameStrip extends StatelessWidget {
                 return GestureDetector(
                   onTap: () => _open(context, frame),
                   child: DecoratedBox(
+                    // In front, or the image covers its own border.
+                    position: DecorationPosition.foreground,
                     decoration: BoxDecoration(
                       border: Border.all(
                         width: 2,
@@ -300,25 +267,70 @@ class _FrameStrip extends StatelessWidget {
   }
 }
 
-String _transferTitle(TransferStats t) {
+String _startTime(TransferStats t) =>
+    t.started.toIso8601String().substring(11, 19);
+
+String _transferSummary(TransferStats t) {
   final status = identical(t, DecodeStats.instance.current)
       ? 'Receiving'
       : t.completed
       ? 'Complete'
       : 'Stopped';
-  final time = t.started.toIso8601String().substring(11, 19);
-  return '$time · ${_kb(t.size)} · $status';
+  final speed = t.newBytesPerSecond == 0
+      ? '-'
+      : '${_kb(t.newBytesPerSecond)}/s';
+  return '${_kb(t.size)} · $speed · ${_seconds(t.duration)} · $status';
+}
+
+/// The few numbers that matter most; [_transferRows] has the rest.
+List<(String, String)> _summaryRows(TransferStats t) {
+  final sorted = t.sortedDecodeMicros();
+  final samples = t.cameraSamples;
+  double average(Iterable<double> values) =>
+      values.reduce((a, b) => a + b) / values.length;
+  return [
+    (
+      'Useful codes',
+      '${_fps(t.newCodesPerSecond)}/s · '
+          '${t.newBytesPerSecond == 0 ? '-' : _kb(t.newBytesPerSecond)}/s',
+    ),
+    if (t.codesShown case final shown?)
+      (
+        'Codes caught',
+        '${t.codesCaught} of $shown shown '
+            '(${_percent(t.codesCaught, shown)})',
+      ),
+    (
+      'Camera',
+      '${t.camera}\n${_fps(t.cameraFps)} FPS · ${_percent(t.framesWithCode, t.decoded)} '
+          'frames with a code',
+    ),
+    if (sorted.isNotEmpty)
+      (
+        'Decode',
+        '${_ms(average(sorted.map((v) => v.toDouble())))} avg · '
+            '${_ms(sorted[((sorted.length - 1) * 0.95).round()])} p95',
+      ),
+    if (samples.isNotEmpty)
+      (
+        'Exposure',
+        '${average(samples.map((s) => s.exposureMs)).toStringAsFixed(1)} ms · '
+            'ISO ${average(samples.map((s) => s.iso)).round()}',
+      ),
+  ];
 }
 
 List<(String, String)> _transferRows(TransferStats t) {
   final sorted = t.sortedDecodeMicros();
   int percentile(double p) => sorted[((sorted.length - 1) * p).round()];
   return [
-    ('New codes per second', _fps(t.newCodesPerSecond)),
+    ('Useful codes per second', _fps(t.newCodesPerSecond)),
     (
-      'New data per second',
+      'Useful data per second',
       t.newBytesPerSecond == 0 ? '-' : '${_kb(t.newBytesPerSecond)}/s',
     ),
+    if (t.codesShown case final shown?)
+      ('Codes caught', _share(t.codesCaught, shown)),
     ('Frames with a code', _share(t.framesWithCode, t.decoded)),
     if (t.maxCodesPerFrame > 1)
       (
@@ -326,7 +338,7 @@ List<(String, String)> _transferRows(TransferStats t) {
         'avg ${t.decoded == 0 ? 0 : (t.codesRead / t.decoded).toStringAsFixed(1)}, '
             'max ${t.maxCodesPerFrame}',
       ),
-    ('New codes', _share(t.newCodes, t.codesRead)),
+    ('Useful codes', _share(t.newCodes, t.codesRead)),
     ('Time scanning', _seconds(t.scanTime)),
     ('Camera frame rate', _fps(t.cameraFps)),
     ('Decoded frame rate', _fps(t.decodedFps)),
@@ -393,6 +405,9 @@ String _kb(num bytes) => '${(bytes / 1000).toStringAsFixed(0)} KB';
 
 String _share(int part, int total) =>
     total == 0 ? '-' : '$part of $total (${(100 * part / total).round()}%)';
+
+String _percent(int part, int total) =>
+    total == 0 ? '-' : '${(100 * part / total).round()}%';
 
 String _fps(double fps) => fps == 0 ? '-' : fps.toStringAsFixed(1);
 

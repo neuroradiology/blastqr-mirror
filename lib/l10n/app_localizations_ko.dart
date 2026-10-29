@@ -457,12 +457,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get camera_60fps => '60 FPS 카메라';
-
-  @override
-  String get camera_60fps_hint => '실험적 기능입니다. 일부 기기에서는 작동하지 않을 수 있습니다.';
-
-  @override
   String get debug => '디버그';
 
   @override
@@ -471,4 +465,48 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get camera_zoom_hint =>
       '확대하면 카메라가 초점을 맞출 수 있는 더 먼 거리에서도 코드를 읽을 수 있습니다. 가까이에서 초점을 맞추지 못하는 휴대폰에 도움이 됩니다.';
+
+  @override
+  String get advanced => '고급';
+
+  @override
+  String get allow_video_hdr => '비디오 HDR 허용';
+
+  @override
+  String get allow_video_hdr_hint => '기본값은 꺼짐입니다. HDR은 두 코드를 한 프레임에 섞을 수 있습니다.';
+
+  @override
+  String get exposure_time => '노출 시간';
+
+  @override
+  String get exposure_time_hint =>
+      '노출이 길면 촬영 중에 보내는 기기의 코드가 바뀔 때 두 코드가 한 프레임에 섞입니다. 노출을 고정하면 밝기를 유지하려고 ISO가 올라가서 이미지에 노이즈가 더 생깁니다.';
+
+  @override
+  String exposure_auto_capped(String ms) {
+    return '자동, 최대 ${ms}ms (기본값)';
+  }
+
+  @override
+  String get exposure_auto => '자동, 제한 없음';
+
+  @override
+  String exposure_fixed(String ms) {
+    return '고정 ${ms}ms';
+  }
+
+  @override
+  String get camera_fps => '카메라 프레임 속도';
+
+  @override
+  String get camera_fps_hint =>
+      '속도가 높을수록 스캐너가 각 코드를 읽을 기회가 많아집니다. 현재 해상도에서 이 휴대폰이 지원하는 속도만 표시됩니다.';
+
+  @override
+  String get fps_default => '기본값';
+
+  @override
+  String fps_auto(String fps) {
+    return '가능한 최고 속도 ($fps FPS)';
+  }
 }

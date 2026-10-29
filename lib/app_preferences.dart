@@ -14,6 +14,10 @@ class AppPreferences {
   /// with the code from a distance they can focus at.
   static double get defaultCameraZoom => Platform.isIOS ? 1.25 : 1.0;
 
+  /// iPhones read codes more reliably at 1080p.
+  static ResolutionPreset get defaultCameraResolution =>
+      Platform.isIOS ? ResolutionPreset.veryHigh : ResolutionPreset.high;
+
   static String? _localeId;
   static ThemeMode? _theme;
   static int? _mtu;
@@ -23,7 +27,7 @@ class AppPreferences {
   static Color? _accentColor;
   static ImageCompressionSettings? _imageCompressionSettings;
   static ResolutionPreset? _cameraResolution;
-  static bool? _camera60Fps;
+  static int? _cameraFps;
   static double? _cameraZoom;
   static bool? _debugVideoHdr;
   static double? _debugExposureMs;
@@ -44,8 +48,9 @@ class AppPreferences {
   static ImageCompressionSettings get imageCompressionSettings =>
       _imageCompressionSettings ?? ImageCompressionSettings.defaultSettings;
   static ResolutionPreset get cameraResolution =>
-      _cameraResolution ?? ResolutionPreset.high;
-  static bool get camera60Fps => _camera60Fps ?? false;
+      _cameraResolution ?? defaultCameraResolution;
+  /// Null for the camera's default.
+  static int? get cameraFps => _cameraFps;
   static double get cameraZoom => _cameraZoom ?? defaultCameraZoom;
   static bool get debugVideoHdr => _debugVideoHdr ?? false;
   static double? get debugExposureMs => _debugExposureMs;
@@ -115,10 +120,14 @@ class AppPreferences {
     _cameraResolution = resolution;
   }
 
-  static Future<void> setCamera60Fps(bool value) async {
+  static Future<void> setCameraFps(int? value) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
-    sp.setBool('camera60Fps', value);
-    _camera60Fps = value;
+    if (value == null) {
+      sp.remove('cameraFps');
+    } else {
+      sp.setInt('cameraFps', value);
+    }
+    _cameraFps = value;
   }
 
   static Future<void> setCameraZoom(double value) async {
@@ -196,8 +205,8 @@ class AppPreferences {
     _cameraResolution =
         sp.getInt('camera_resolution') != null
             ? ResolutionPreset.values[sp.getInt('camera_resolution')!]
-            : ResolutionPreset.high;
-    _camera60Fps = sp.getBool('camera60Fps') ?? false;
+            : defaultCameraResolution;
+    _cameraFps = sp.getInt('cameraFps');
     _cameraZoom = sp.getDouble('cameraZoom') ?? defaultCameraZoom;
     _debugVideoHdr = sp.getBool('debugVideoHdr') ?? false;
     _debugExposureMs = sp.getDouble('debugExposure');

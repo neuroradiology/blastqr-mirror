@@ -954,18 +954,6 @@ abstract class AppLocalizations {
   /// **'Sending {count} files'**
   String sending_files_count(int count);
 
-  /// No description provided for @camera_60fps.
-  ///
-  /// In en, this message translates to:
-  /// **'60 FPS camera'**
-  String get camera_60fps;
-
-  /// No description provided for @camera_60fps_hint.
-  ///
-  /// In en, this message translates to:
-  /// **'Experimental. May not work on every device.'**
-  String get camera_60fps_hint;
-
   /// No description provided for @debug.
   ///
   /// In en, this message translates to:
@@ -983,6 +971,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Zooming in lets the camera read codes from further away, where it can still focus. Helps on phones that can\'t focus up close.'**
   String get camera_zoom_hint;
+
+  /// No description provided for @advanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get advanced;
+
+  /// No description provided for @allow_video_hdr.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow video HDR'**
+  String get allow_video_hdr;
+
+  /// No description provided for @allow_video_hdr_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Off by default. HDR can blend two codes into one frame.'**
+  String get allow_video_hdr_hint;
+
+  /// No description provided for @exposure_time.
+  ///
+  /// In en, this message translates to:
+  /// **'Exposure time'**
+  String get exposure_time;
+
+  /// No description provided for @exposure_time_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long exposures blend two codes into one frame when the sender changes code mid-capture. A fixed exposure raises ISO to keep the brightness, so the image gets noisier.'**
+  String get exposure_time_hint;
+
+  /// No description provided for @exposure_auto_capped.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic, max {ms} ms (default)'**
+  String exposure_auto_capped(String ms);
+
+  /// No description provided for @exposure_auto.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic, no limit'**
+  String get exposure_auto;
+
+  /// No description provided for @exposure_fixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed {ms} ms'**
+  String exposure_fixed(String ms);
+
+  /// No description provided for @camera_fps.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera frame rate'**
+  String get camera_fps;
+
+  /// No description provided for @camera_fps_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Higher rates give the scanner more chances to read each code. Only the rates this phone supports at the current resolution are listed.'**
+  String get camera_fps_hint;
+
+  /// No description provided for @fps_default.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get fps_default;
+
+  /// No description provided for @fps_auto.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest available ({fps} FPS)'**
+  String fps_auto(String fps);
 }
 
 class _AppLocalizationsDelegate

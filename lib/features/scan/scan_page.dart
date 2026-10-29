@@ -74,8 +74,12 @@ class _ScanPageState extends State<ScanPage> {
   final _tracker = TransferTracker();
   CameraController? _cameraController;
   bool _focusLocked = false;
-  final _readerKey = GlobalKey();
+  final _readerKey = GlobalKey<QrScannerState>();
   Offset? _focusIndicator;
+
+  /// Quick taps in a row; the third restarts the camera.
+  int _taps = 0;
+  final _sinceLastTap = Stopwatch();
 
   @override
   void initState() {
@@ -91,9 +95,22 @@ class _ScanPageState extends State<ScanPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _appSettings = Provider.of<AppSettings>(context, listen: true);
+    _updateCameraLabel();
+    _configureCamera();
+  }
+
+  /// The frame rate the open camera uses, which [QrScanner] picks when none
+  /// is set.
+  int? _openedFps;
+
+  void _updateCameraLabel() {
+    final fps = _openedFps ?? _cameraFps;
     DecodeStats.instance.camera = [
       _cameraResolution.name.capitalize(),
-      '${_cameraFps ?? 'default'} FPS',
+      if (fps == null)
+        'default FPS'
+      else
+        '$fps FPS${_cameraFps == null ? ' (highest)' : ''}',
       '${_appSettings.cameraZoom}× zoom',
       if (Platform.isIOS) ...[
         _appSettings.debugVideoHdr ? 'HDR on' : 'HDR off',
@@ -104,7 +121,6 @@ class _ScanPageState extends State<ScanPage> {
         },
       ],
     ].join(', ');
-    _configureCamera();
   }
 
   @override
@@ -190,7 +206,7 @@ class _ScanPageState extends State<ScanPage> {
           alignment: Alignment.topCenter,
           children: [
             GestureDetector(
-              onTapUp: (details) => _focusAt(details.localPosition),
+              onTapUp: (details) => _onPreviewTap(details.localPosition),
               child: _showsReaderWidget && _cameraLoaded
                   // The scanner outlines codes in primaryColor, which a
                   // dark theme sets to the surface color.
@@ -384,10 +400,13 @@ class _ScanPageState extends State<ScanPage> {
       case ScanAction.switchTransfer:
         _restartTransfer();
         _startTransfer(frame!);
+        DecodeStats.instance.recordPacket(frame.data);
       case ScanAction.start:
         _startTransfer(frame!);
+        DecodeStats.instance.recordPacket(frame.data);
       case ScanAction.decode:
         _decoder.decodeChunk(frame!);
+        DecodeStats.instance.recordPacket(frame.data);
     }
   }
 
@@ -816,6 +835,25 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
+  /// Tapping again and again usually means scanning is stuck, which focusing
+  /// doesn't fix but reopening the camera does.
+  void _onPreviewTap(Offset tap) {
+    _taps =
+        _sinceLastTap.isRunning &&
+            _sinceLastTap.elapsed < const Duration(milliseconds: 600)
+        ? _taps + 1
+        : 1;
+    _sinceLastTap
+      ..reset()
+      ..start();
+    if (_taps < 3) {
+      _focusAt(tap);
+      return;
+    }
+    _taps = 0;
+    _readerKey.currentState?.restart();
+  }
+
   void _focusAt(Offset tap) {
     final controller = _cameraController;
     if (controller == null || !controller.value.isInitialized) return;
@@ -863,13 +901,15 @@ class _ScanPageState extends State<ScanPage> {
       Platform.isLinux ? ResolutionPreset.low : _appSettings.cameraResolution;
 
   int? get _cameraFps =>
-      (Platform.isIOS || Platform.isAndroid) && _appSettings.camera60Fps
-      ? 60
-      : null;
+      Platform.isIOS || Platform.isAndroid ? _appSettings.cameraFps : null;
 
   void _onCameraChanged(CameraController? controller) {
     _cameraController = controller;
     _focusLocked = false;
+    if (controller != null) {
+      _openedFps = controller.mediaSettings.fps;
+      _updateCameraLabel();
+    }
     _configureCamera();
   }
 

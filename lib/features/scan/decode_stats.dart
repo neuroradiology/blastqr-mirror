@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:blast_qr/debug_channel.dart';
 import 'package:camera/camera.dart';
@@ -17,6 +18,15 @@ class DecodeStats extends ChangeNotifier {
 
   /// Settings the scanner opens the camera with.
   String? camera;
+
+  /// Keep a few camera frames per transfer, to look at or share. Off by
+  /// default, as each transfer then holds several MB.
+  bool saveFrames = false;
+
+  void updateSaveFrames(bool value) {
+    saveFrames = value;
+    notifyListeners();
+  }
 
   /// Newest first.
   final List<TransferStats> transfers = [];
@@ -59,6 +69,7 @@ class DecodeStats extends ChangeNotifier {
   /// All the data has arrived.
   void completeTransfer() {
     _current?.completed = true;
+    _current?.ended = DateTime.now();
     _current = null;
     _sampler?.cancel();
     notifyListeners();
@@ -66,6 +77,7 @@ class DecodeStats extends ChangeNotifier {
 
   /// Stops counting towards the current transfer, finished or not.
   void endTransfer() {
+    _current?.ended = DateTime.now();
     _current = null;
     _sampler?.cancel();
     notifyListeners();
@@ -77,7 +89,7 @@ class DecodeStats extends ChangeNotifier {
     final current = _current;
     if (current == null) return;
     current._recordFrame(decodeTime);
-    if (decodeTime != null) {
+    if (saveFrames && decodeTime != null) {
       current._maybeSaveFrame(image, codes, notifyListeners);
     }
     notifyListeners();
@@ -92,6 +104,11 @@ class DecodeStats extends ChangeNotifier {
     current.codesRead += count;
     if (count > current.maxCodesPerFrame) current.maxCodesPerFrame = count;
     notifyListeners();
+  }
+
+  /// A RaptorQ packet read for the current transfer, repeats included.
+  void recordPacket(Uint8List packet) {
+    _current?._recordPacket(packet);
   }
 
   /// A code the transfer hadn't seen before.
@@ -121,7 +138,11 @@ class TransferStats {
   final String camera;
   final int size;
   final DateTime started;
+  DateTime? ended;
   bool completed = false;
+
+  /// From the first code to all data received, or to when it stopped.
+  Duration get duration => (ended ?? DateTime.now()).difference(started);
 
   int skipped = 0;
   Duration scanTime = Duration.zero;
@@ -136,6 +157,43 @@ class TransferStats {
   int maxCodesPerFrame = 0;
   int newCodes = 0;
   int newBytes = 0;
+
+  // The sender numbers packets in the order it shows them: source packets,
+  // then repair packets, each new. In a single-block transfer (anything under
+  // about 150 MB) that number is the packet's symbol id, so every id between
+  // the first and last one caught was shown.
+  final Set<int> _caughtIds = {};
+  int? _firstId;
+  int? _lastId;
+  bool _multiBlock = false;
+
+  /// Codes read out of the ones the sender showed while receiving; null when
+  /// that can't be told.
+  int? get codesShown =>
+      _multiBlock || _firstId == null ? null : _lastId! - _firstId! + 1;
+  int get codesCaught => _caughtIds.length;
+
+  /// Close to the most a transfer can get: nearly every code shown was read.
+  bool get nearOptimal {
+    final shown = codesShown;
+    return completed &&
+        shown != null &&
+        shown >= 20 &&
+        codesCaught >= 0.85 * shown;
+  }
+
+  void _recordPacket(Uint8List packet) {
+    if (packet.length < 4) return;
+    if (packet[0] != 0) {
+      _multiBlock = true;
+      return;
+    }
+    final id = (packet[1] << 16) | (packet[2] << 8) | packet[3];
+    _caughtIds.add(id);
+    _firstId = _firstId == null ? id : min(_firstId!, id);
+    _lastId = _lastId == null ? id : max(_lastId!, id);
+  }
+
   Duration receiveTime = Duration.zero;
   DateTime? _lastNewCode;
 

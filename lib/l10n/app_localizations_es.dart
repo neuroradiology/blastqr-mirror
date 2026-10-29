@@ -474,13 +474,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get camera_60fps => 'Cámara a 60 FPS';
-
-  @override
-  String get camera_60fps_hint =>
-      'Experimental. Puede no funcionar en todos los dispositivos.';
-
-  @override
   String get debug => 'Depuración';
 
   @override
@@ -489,4 +482,49 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get camera_zoom_hint =>
       'Hacer zoom permite leer los códigos desde más lejos, donde la cámara aún puede enfocar. Ayuda en móviles que no enfocan de cerca.';
+
+  @override
+  String get advanced => 'Avanzado';
+
+  @override
+  String get allow_video_hdr => 'Permitir vídeo HDR';
+
+  @override
+  String get allow_video_hdr_hint =>
+      'Desactivado por defecto. El HDR puede mezclar dos códigos en un mismo fotograma.';
+
+  @override
+  String get exposure_time => 'Tiempo de exposición';
+
+  @override
+  String get exposure_time_hint =>
+      'Las exposiciones largas mezclan dos códigos en un fotograma cuando el emisor cambia de código durante la captura. Una exposición fija sube el ISO para mantener el brillo, así que la imagen tiene más ruido.';
+
+  @override
+  String exposure_auto_capped(String ms) {
+    return 'Automático, máx. $ms ms (por defecto)';
+  }
+
+  @override
+  String get exposure_auto => 'Automático, sin límite';
+
+  @override
+  String exposure_fixed(String ms) {
+    return 'Fijo $ms ms';
+  }
+
+  @override
+  String get camera_fps => 'Fotogramas por segundo de la cámara';
+
+  @override
+  String get camera_fps_hint =>
+      'Más fotogramas dan al escáner más oportunidades de leer cada código. Solo se muestran los que admite este móvil con la resolución actual.';
+
+  @override
+  String get fps_default => 'Por defecto';
+
+  @override
+  String fps_auto(String fps) {
+    return 'Máximo disponible ($fps FPS)';
+  }
 }

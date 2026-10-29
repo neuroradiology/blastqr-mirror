@@ -26,16 +26,21 @@ import UIKit
     }
     FlutterMethodChannel(name: "blastqr/camera", binaryMessenger: registrar.messenger())
       .setMethodCallHandler { call, result in
-        guard call.method == "configureScanCamera" else {
-          result(FlutterMethodNotImplemented)
-          return
-        }
         let args = call.arguments as? [String: Any] ?? [:]
-        Self.configureScanCamera(
-          videoHdr: args["videoHdr"] as? Bool ?? false,
-          maxExposureMs: args["maxExposureMs"] as? Double,
-          exposureMs: args["exposureMs"] as? Double)
-        result(nil)
+        switch call.method {
+        case "configureScanCamera":
+          Self.configureScanCamera(
+            videoHdr: args["videoHdr"] as? Bool ?? false,
+            maxExposureMs: args["maxExposureMs"] as? Double,
+            exposureMs: args["exposureMs"] as? Double)
+          result(nil)
+        case "supportedFrameRates":
+          result(
+            Self.supportedFrameRates(
+              width: args["width"] as? Int ?? 0, height: args["height"] as? Int ?? 0))
+        default:
+          result(FlutterMethodNotImplemented)
+        }
       }
     FlutterMethodChannel(name: "blastqr/debug", binaryMessenger: registrar.messenger())
       .setMethodCallHandler { call, result in
@@ -75,6 +80,33 @@ import UIKit
       state["minFocusDistanceMm"] = device.minimumFocusDistance
     }
     return state
+  }
+
+  // Common frame rates that some format of the back wide camera supports at
+  // this size, which is what the camera plugin picks from. A size of 0 means
+  // the largest format, as the plugin's "max" preset uses.
+  private static func supportedFrameRates(width: Int, height: Int) -> [Int] {
+    guard
+      let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+    else { return [] }
+    func size(_ format: AVCaptureDevice.Format) -> CMVideoDimensions {
+      CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+    }
+    var target = CMVideoDimensions(width: Int32(width), height: Int32(height))
+    if width == 0 || height == 0 {
+      guard
+        let largest = device.formats.max(by: {
+          Int(size($0).width) * Int(size($0).height) < Int(size($1).width) * Int(size($1).height)
+        })
+      else { return [] }
+      target = size(largest)
+    }
+    let ranges = device.formats
+      .filter { size($0).width == target.width && size($0).height == target.height }
+      .flatMap { $0.videoSupportedFrameRateRanges }
+    return [15, 24, 25, 30, 48, 50, 60, 120, 240].filter { fps in
+      ranges.contains { Double(fps) >= $0.minFrameRate && Double(fps) <= $0.maxFrameRate }
+    }
   }
 
   // ISO × exposure seconds that automatic exposure settled on, before we took

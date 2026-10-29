@@ -11,6 +11,22 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "blastqr/camera")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "supportedFrameRates") {
+                    // The camera plugin asks for a fixed rate, so only fixed
+                    // ranges are options.
+                    result.success(
+                        backCameraFpsRanges()
+                            .filter { it[0] == it[1] }
+                            .map { it[0] }
+                            .distinct()
+                            .sorted()
+                    )
+                } else {
+                    result.notImplemented()
+                }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "blastqr/debug")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
