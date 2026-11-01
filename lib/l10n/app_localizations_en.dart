@@ -57,6 +57,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get open => 'Open';
 
   @override
+  String get show_in_file_manager => 'See in file manager';
+
+  @override
   String get rename => 'Rename';
 
   @override
@@ -110,7 +113,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get send_large_file => 'Send original file anyway';
 
   @override
-  String get send_compressed_image => 'Send compressed image file';
+  String get send_compressed_image => 'Send compressed';
 
   @override
   String get to_transfer => 'to transfer';
@@ -277,6 +280,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selected_options => 'Selected files';
 
   @override
+  String files_selected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files selected',
+      one: '1 file selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get file_missing => 'File not found';
+
+  @override
+  String file_missing_msg(String name) {
+    return '$name was moved or deleted.';
+  }
+
+  @override
   String get file_too_large => 'File too large';
 
   @override
@@ -298,6 +320,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get send_picture_subtitle => 'From your photo library';
+
+  @override
+  String get drop_files => 'Drop files here';
+
+  @override
+  String get drop_files_subtitle => 'or click to choose';
 
   @override
   String get desktop_receive_unsupported =>

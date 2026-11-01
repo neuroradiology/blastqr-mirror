@@ -198,6 +198,12 @@ abstract class AppLocalizations {
   /// **'Open'**
   String get open;
 
+  /// No description provided for @show_in_file_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'See in file manager'**
+  String get show_in_file_manager;
+
   /// No description provided for @rename.
   ///
   /// In en, this message translates to:
@@ -303,7 +309,7 @@ abstract class AppLocalizations {
   /// No description provided for @send_compressed_image.
   ///
   /// In en, this message translates to:
-  /// **'Send compressed image file'**
+  /// **'Send compressed'**
   String get send_compressed_image;
 
   /// No description provided for @to_transfer.
@@ -618,6 +624,24 @@ abstract class AppLocalizations {
   /// **'Selected files'**
   String get selected_options;
 
+  /// No description provided for @files_selected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file selected} other{{count} files selected}}'**
+  String files_selected(int count);
+
+  /// No description provided for @file_missing.
+  ///
+  /// In en, this message translates to:
+  /// **'File not found'**
+  String get file_missing;
+
+  /// No description provided for @file_missing_msg.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was moved or deleted.'**
+  String file_missing_msg(String name);
+
   /// No description provided for @file_too_large.
   ///
   /// In en, this message translates to:
@@ -659,6 +683,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'From your photo library'**
   String get send_picture_subtitle;
+
+  /// No description provided for @drop_files.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop files here'**
+  String get drop_files;
+
+  /// No description provided for @drop_files_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'or click to choose'**
+  String get drop_files_subtitle;
 
   /// No description provided for @desktop_receive_unsupported.
   ///
