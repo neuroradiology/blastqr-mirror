@@ -277,9 +277,6 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Estás seguro de que deseas eliminar los archivos seleccionados?';
 
   @override
-  String get selected_options => 'Archivos seleccionados';
-
-  @override
   String files_selected(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

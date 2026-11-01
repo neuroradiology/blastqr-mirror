@@ -277,9 +277,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to delete the selected files?';
 
   @override
-  String get selected_options => 'Selected files';
-
-  @override
   String files_selected(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

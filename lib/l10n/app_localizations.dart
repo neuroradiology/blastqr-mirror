@@ -618,12 +618,6 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to delete the selected files?'**
   String get delete_files_msg;
 
-  /// No description provided for @selected_options.
-  ///
-  /// In en, this message translates to:
-  /// **'Selected files'**
-  String get selected_options;
-
   /// No description provided for @files_selected.
   ///
   /// In en, this message translates to:

@@ -75,7 +75,6 @@
   "select_all": "Seleccionar todo",
   "selected": "seleccionados",
   "delete_files_msg": "¿Estás seguro de que deseas eliminar los archivos seleccionados?",
-  "selected_options": "Archivos seleccionados",
   "files_selected": "{count, plural, =1{1 archivo seleccionado} other{{count} archivos seleccionados}}",
   "file_missing": "Archivo no encontrado",
   "file_missing_msg": "{name} se ha movido o eliminado.",

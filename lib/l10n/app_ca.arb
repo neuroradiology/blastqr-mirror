@@ -79,7 +79,6 @@
   "select_all": "Seleccionar tot",
   "selected": "seleccionats",
   "delete_files_msg": "Segur que vols suprimir els fitxers seleccionats?",
-  "selected_options": "Fitxers seleccionats",
   "files_selected": "{count, plural, =1{1 fitxer seleccionat} other{{count} fitxers seleccionats}}",
   "file_missing": "No s'ha trobat el fitxer",
   "file_missing_msg": "{name} s'ha mogut o eliminat.",

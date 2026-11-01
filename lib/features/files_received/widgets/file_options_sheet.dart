@@ -17,6 +17,7 @@ Future<void> showFileOptionsSheet(
   BuildContext context,
   FileWrapper file, {
   required VoidCallback onOpen,
+  VoidCallback? onShowInFileManager,
   required VoidCallback onSaveToDownloads,
   required VoidCallback onRename,
   required void Function(SendOptions options) onSend,
@@ -42,6 +43,16 @@ Future<void> showFileOptionsSheet(
           ),
           title: Text(context.l10n.open),
         ),
+        if (onShowInFileManager != null)
+          ListTile(
+            dense: true,
+            onTap: onShowInFileManager,
+            leading: HugeIcon(
+              icon: HugeIcons.strokeRoundedFolderOpen,
+              color: context.color.primary,
+            ),
+            title: Text(context.l10n.show_in_file_manager),
+          ),
         if (Platform.isAndroid)
           ListTile(
             dense: true,

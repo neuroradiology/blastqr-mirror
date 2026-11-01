@@ -277,9 +277,6 @@ class AppLocalizationsCa extends AppLocalizations {
       'Segur que vols suprimir els fitxers seleccionats?';
 
   @override
-  String get selected_options => 'Fitxers seleccionats';
-
-  @override
   String files_selected(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

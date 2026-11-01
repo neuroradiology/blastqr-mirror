@@ -273,9 +273,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get delete_files_msg => '선택한 파일을 삭제하시겠습니까?';
 
   @override
-  String get selected_options => '선택된 파일';
-
-  @override
   String files_selected(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
