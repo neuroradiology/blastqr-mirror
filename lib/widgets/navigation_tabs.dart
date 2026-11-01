@@ -33,7 +33,7 @@ class NavigationTabs extends StatelessWidget {
                     offset: const Offset(0, 2),
                   ),
                 ],
-                color: context.color.surface.withAlpha(215),
+                color: context.translucentSurface,
                 borderRadius: BorderRadius.circular(36),
               ),
             ),
