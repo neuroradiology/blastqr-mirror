@@ -102,7 +102,6 @@
   "drop_files_subtitle": "o haz clic para elegirlos",
   "desktop_receive_unsupported": "* La recepción de archivos aún no es compatible en Windows",
   "recent": "Recientes",
-  "send_selected": "Enviar seleccionados",
   "sending_settings": "Envío",
   "receiving_settings": "Recepción",
   "restore_defaults": "Restaurar",

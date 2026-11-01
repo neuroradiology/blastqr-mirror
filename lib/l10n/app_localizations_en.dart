@@ -332,9 +332,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recent => 'Recent';
 
   @override
-  String get send_selected => 'Send selected';
-
-  @override
   String get sending_settings => 'Sending';
 
   @override

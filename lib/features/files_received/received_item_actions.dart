@@ -31,7 +31,7 @@ mixin ReceivedItemActions<T extends StatefulWidget> on State<T> {
   /// Desktop: the options for one item, or for the whole selection.
   void openItems(List<ReceivedItem> items) {
     if (items.length > 1) {
-      showMultiSelectSheet();
+      _showMultiSelectSheet();
     } else if (items.singleOrNull case final item?) {
       showItemOptions(item);
     }
@@ -75,7 +75,7 @@ mixin ReceivedItemActions<T extends StatefulWidget> on State<T> {
     }
   }
 
-  Future<void> showMultiSelectSheet() async {
+  Future<void> _showMultiSelectSheet() async {
     final files = await Future.wait(
       selection.selected.map((item) => item.toFileWrapper()),
     );

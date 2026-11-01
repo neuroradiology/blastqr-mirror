@@ -19,6 +19,7 @@ import 'package:blast_qr/widgets/file_list_row.dart';
 import 'package:blast_qr/widgets/file_list_selection.dart';
 import 'package:blast_qr/widgets/file_list_tile.dart';
 import 'package:blast_qr/widgets/logo_widget.dart';
+import 'package:blast_qr/widgets/selection_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
@@ -32,7 +33,7 @@ class FilesPage extends StatefulWidget {
 }
 
 class _FilesPageState extends State<FilesPage>
-    with ReceivedItemActions<FilesPage> {
+    with ReceivedItemActions<FilesPage>, SelectionBarOwner<FilesPage> {
   static const _chipsOverlap = 12.0;
 
   /// Newest first. Created once per load so selection can match by identity.
@@ -55,9 +56,13 @@ class _FilesPageState extends State<FilesPage>
 
   bool get _isSelecting => _selection.isNotEmpty;
 
-  void _onSelectionChanged() => setState(() {});
-
-  void _exitSelectionMode() => _selection.clear();
+  void _onSelectionChanged() {
+    setState(() {});
+    updateSelectionBar(
+      _selection,
+      onOpen: () => openItems(_selection.selected),
+    );
+  }
 
   @override
   void initState() {
@@ -266,41 +271,25 @@ class _FilesPageState extends State<FilesPage>
       appBar: isDesktop
           ? null
           : AppBar(
-              title: _isSelecting
-                  ? Text('${_selection.length} ${context.l10n.selected}')
-                  : const LogoWidget(),
-              centerTitle: !_isSelecting,
-              leading: _isSelecting
-                  ? IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: _exitSelectionMode,
-                    )
-                  : null,
+              title: const LogoWidget(),
+              centerTitle: true,
               automaticallyImplyLeading: false,
               toolbarHeight: 80,
               surfaceTintColor: Colors.transparent,
               backgroundColor: Colors.transparent,
               actions: [
-                if (_isSelecting)
-                  CircleButton(
-                    icon: const Icon(Icons.more_horiz),
-                    onPressed: showMultiSelectSheet,
-                  )
-                else
-                  CircleButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return const SettingsPage();
-                          },
-                        ),
-                      );
-                    },
-                    icon: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedSettings01,
-                    ),
-                  ),
+                CircleButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return const SettingsPage();
+                        },
+                      ),
+                    );
+                  },
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedSettings01),
+                ),
               ],
               // The chips row tucks 12px under the bar, so fade over those 12px.
               flexibleSpace: LayoutBuilder(
@@ -365,8 +354,9 @@ class _FilesPageState extends State<FilesPage>
                 _buildTiles(groupByDay(items)),
               SliverToBoxAdapter(
                 child: SizedBox(
+                  // On desktop, room for the selection bar while it shows.
                   height: isDesktop
-                      ? 16
+                      ? 16 + (showsSelectionBar ? SelectionBar.height + 16 : 0)
                       : MediaQuery.of(context).padding.bottom,
                 ),
               ),

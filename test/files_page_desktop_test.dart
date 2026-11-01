@@ -2,10 +2,13 @@ import 'dart:io';
 
 import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/features/files_received/files_page.dart';
+import 'package:blast_qr/features/home_tabs_page.dart';
 import 'package:blast_qr/file_badge_count.dart';
 import 'package:blast_qr/l10n/app_localizations.dart';
+import 'package:blast_qr/nav_bar_visibility.dart';
 import 'package:blast_qr/platform_support.dart';
 import 'package:blast_qr/widgets/file_list_row.dart';
+import 'package:blast_qr/widgets/selection_bar.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,21 +50,34 @@ void main() {
     }
   }
 
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    Widget home = const FilesPage(),
+  }) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => AppSettings()),
+          ChangeNotifierProvider(create: (_) => EncodeSettings()),
           ChangeNotifierProvider(create: (_) => FileBadgeCount(value: null)),
+          ChangeNotifierProvider(create: (_) => NavBarVisibility()),
+          ChangeNotifierProvider(create: (_) => SelectionBarController()),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: FilesPage(),
+          home: home,
         ),
       ),
     );
     await settle(tester);
+  }
+
+  /// The home page's background never stops animating, so this waits a
+  /// fixed time instead of for all animations to end.
+  Future<void> step(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
   }
 
   List<String> selectedNames(WidgetTester tester) => [
@@ -96,6 +112,68 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsOneWidget);
     expect(selectedNames(tester), ['f0.txt']);
+  }, skip: !isDesktop);
+
+  testWidgets('the selection bar shows the count and opens or clears', (
+    tester,
+  ) async {
+    await pumpPage(tester, home: const HomeTabsPage());
+    await tester.tap(find.text('Received'));
+    await settle(tester);
+    expect(find.byType(SelectionBar), findsNothing);
+
+    // One file: the arrow opens its own options.
+    await tester.tap(find.text('f1.txt'));
+    await step(tester);
+    expect(find.text('1 selected'), findsOneWidget);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(SelectionBar),
+            matching: find.byType(IconButton),
+          )
+          .last,
+    );
+    await step(tester);
+    expect(find.text('File options'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await step(tester);
+
+    // Several: the arrow opens the dialog for all of them.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.tap(find.text('f3.txt'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await step(tester);
+    expect(find.text('3 selected'), findsOneWidget);
+    await tester.tap(find.byType(SelectionBar));
+    await step(tester);
+    expect(find.text('3 files selected'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await step(tester);
+
+    // Clear hides the bar.
+    await tester.tap(find.byTooltip('Cancel'));
+    await step(tester);
+    expect(find.byType(SelectionBar), findsNothing);
+    expect(selectedNames(tester), isEmpty);
+  }, skip: !isDesktop);
+
+  testWidgets('back clears the selection instead of leaving', (tester) async {
+    await pumpPage(tester, home: const HomeTabsPage());
+    await tester.tap(find.text('Received'));
+    await settle(tester);
+    await tester.tap(find.text('f1.txt'));
+    await step(tester);
+    expect(find.byType(SelectionBar), findsOneWidget);
+
+    // What Android's back button sends.
+    final handled = await tester.binding.handlePopRoute();
+    await step(tester);
+
+    expect(handled, isTrue);
+    expect(find.byType(SelectionBar), findsNothing);
+    expect(selectedNames(tester), isEmpty);
+    expect(find.byType(HomeTabsPage), findsOneWidget);
   }, skip: !isDesktop);
 
   testWidgets('files changed by other apps show up', (tester) async {

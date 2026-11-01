@@ -1,14 +1,15 @@
 import 'dart:io';
 
-import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/widgets/file_list_row.dart';
 import 'package:blast_qr/widgets/file_list_selection.dart';
 import 'package:blast_qr/widgets/file_list_tile.dart';
+import 'package:blast_qr/widgets/selection_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
+/// Phone recents: tap sends a file, long-press starts selecting several,
+/// which are sent from the selection bar.
 class RecentFilesTiles extends StatefulWidget {
   const RecentFilesTiles({
     super.key,
@@ -27,13 +28,17 @@ class RecentFilesTiles extends StatefulWidget {
   State<RecentFilesTiles> createState() => _RecentFilesTilesState();
 }
 
-class _RecentFilesTilesState extends State<RecentFilesTiles> {
+class _RecentFilesTilesState extends State<RecentFilesTiles>
+    with SelectionBarOwner<RecentFilesTiles> {
   late final _selection = FileListSelection<FileWrapper>(() => widget.entries)
     ..addListener(_onSelectionChanged);
 
   bool get _selecting => _selection.isNotEmpty;
 
-  void _onSelectionChanged() => setState(() {});
+  void _onSelectionChanged() {
+    setState(() {});
+    updateSelectionBar(_selection, onOpen: () => _send(_selection.selected));
+  }
 
   @override
   void dispose() {
@@ -57,74 +62,33 @@ class _RecentFilesTilesState extends State<RecentFilesTiles> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SizedBox(
-            height: 24,
-            child: Row(
-              spacing: 4,
-              children: [
-                Text(
-                  _selecting
-                      ? '${_selection.length} ${context.l10n.selected}'
-                      : context.l10n.recent,
-                  style: const TextStyle(fontFamily: 'Jersey25', fontSize: 18),
-                ),
-                if (_selecting)
-                  IconButton(
-                    onPressed: _selection.clear,
-                    tooltip: context.l10n.cancel,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 24,
-                      height: 24,
-                    ),
-                    icon: HugeIcon(
-                      icon: HugeIcons.strokeRoundedCancel01,
-                      color: context.color.onSurface,
-                      size: 16,
-                    ),
-                  ),
-              ],
-            ),
+          child: Text(
+            context.l10n.recent,
+            style: const TextStyle(fontFamily: 'Jersey25', fontSize: 18),
           ),
         ),
         Expanded(
-          child: Stack(
-            children: [
-              ListView.builder(
-                // Room to scroll the last file above the tabs and the
-                // send button.
-                padding: EdgeInsets.only(
-                  bottom: widget.bottomInset + (_selecting ? 64 : 0),
+          child: ListView.builder(
+            // Room to scroll the last file above the tabs.
+            padding: EdgeInsets.only(bottom: widget.bottomInset),
+            itemCount: entries.length,
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              return FileListTile(
+                thumbnail: entry.buildThumbnail(
+                  context,
+                  size: FileListTile.thumbnailSize,
                 ),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  return FileListTile(
-                    thumbnail: entry.buildThumbnail(
-                      context,
-                      size: FileListTile.thumbnailSize,
-                    ),
-                    title: entry.name,
-                    subtitle: entry.sizeInkB,
-                    isSelecting: _selecting,
-                    isSelected: _selection.contains(entry),
-                    onTap: _selecting
-                        ? () => _selection.toggle(entry)
-                        : () => _send([entry]),
-                    onLongPress: () => _selection.toggle(entry),
-                  );
-                },
-              ),
-              if (_selecting)
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: widget.bottomInset + 8,
-                  child: _SendSelectedButton(
-                    onPressed: () => _send(_selection.selected),
-                  ),
-                ),
-            ],
+                title: entry.name,
+                subtitle: entry.sizeInkB,
+                isSelecting: _selecting,
+                isSelected: _selection.contains(entry),
+                onTap: _selecting
+                    ? () => _selection.toggle(entry)
+                    : () => _send([entry]),
+                onLongPress: () => _selection.toggle(entry),
+              );
+            },
           ),
         ),
       ],
@@ -148,11 +112,15 @@ class RecentFilesList extends StatefulWidget {
   State<RecentFilesList> createState() => _RecentFilesListState();
 }
 
-class _RecentFilesListState extends State<RecentFilesList> {
+class _RecentFilesListState extends State<RecentFilesList>
+    with SelectionBarOwner<RecentFilesList> {
   late final _selection = FileListSelection<FileWrapper>(() => widget.entries)
     ..addListener(_onSelectionChanged);
 
-  void _onSelectionChanged() => setState(() {});
+  void _onSelectionChanged() {
+    setState(() {});
+    updateSelectionBar(_selection, onOpen: () => _send(_selection.selected));
+  }
 
   @override
   void dispose() {
@@ -181,84 +149,37 @@ class _RecentFilesListState extends State<RecentFilesList> {
           ),
         ),
         Expanded(
-          child: Stack(
-            children: [
-              FileListKeyboard(
-                selection: _selection,
-                onOpen: _send,
-                child: ListView.builder(
-                  // Room to scroll the last file above the send button.
-                  padding: EdgeInsets.only(bottom: _selection.isEmpty ? 0 : 64),
-                  itemCount: entries.length,
-                  itemBuilder: (context, index) {
-                    final entry = entries[index];
-                    return FileListRow(
-                      key: entry == _selection.cursor
-                          ? _selection.cursorKey
-                          : null,
-                      thumbnail: entry.buildThumbnail(
-                        context,
-                        size: FileListRow.iconSize,
-                      ),
-                      name: entry.name,
-                      size: entry.sizeInkB,
-                      striped: index.isOdd,
-                      selected: _selection.contains(entry),
-                      showCheckmark: _selection.length > 1,
-                      margin: EdgeInsets.zero,
-                      onTap: () => _selection.tap(entry, _send),
-                      onSecondaryTap: () =>
-                          _selection.secondaryTap(entry, _send),
-                    );
-                  },
-                ),
+          child: FileListKeyboard(
+            selection: _selection,
+            onOpen: _send,
+            child: ListView.builder(
+              // Room to scroll the last file above the selection bar.
+              padding: EdgeInsets.only(
+                bottom: showsSelectionBar ? SelectionBar.height : 0,
               ),
-              if (_selection.isNotEmpty)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 8,
-                  child: Center(
-                    child: _SendSelectedButton(
-                      onPressed: () => _send(_selection.selected),
-                      fitLabel: true,
-                    ),
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                return FileListRow(
+                  key: entry == _selection.cursor ? _selection.cursorKey : null,
+                  thumbnail: entry.buildThumbnail(
+                    context,
+                    size: FileListRow.iconSize,
                   ),
-                ),
-            ],
+                  name: entry.name,
+                  size: entry.sizeInkB,
+                  striped: index.isOdd,
+                  selected: _selection.contains(entry),
+                  showCheckmark: _selection.length > 1,
+                  margin: EdgeInsets.zero,
+                  onTap: () => _selection.tap(entry, _send),
+                  onSecondaryTap: () => _selection.secondaryTap(entry, _send),
+                );
+              },
+            ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SendSelectedButton extends StatelessWidget {
-  const _SendSelectedButton({required this.onPressed, this.fitLabel = false});
-
-  final VoidCallback onPressed;
-
-  /// As wide as its label instead of the available width.
-  final bool fitLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      // Floats over the list, so a shadow sets it apart from the rows under
-      // it, which can be selected and in the same color.
-      style: ElevatedButton.styleFrom(
-        shape: const StadiumBorder(),
-        elevation: 3,
-        shadowColor: Colors.black,
-        minimumSize: fitLabel ? const Size(0, 48) : null,
-        padding: fitLabel ? const EdgeInsets.symmetric(horizontal: 24) : null,
-      ),
-      icon: const HugeIcon(
-        icon: HugeIcons.strokeRoundedSent02,
-        color: Colors.white,
-      ),
-      label: Text(context.l10n.send_selected),
     );
   }
 }

@@ -17,6 +17,7 @@ import 'package:blast_qr/platform_support.dart';
 import 'package:blast_qr/temp_files.dart';
 import 'package:blast_qr/widgets/navigation_tabs.dart';
 import 'package:blast_qr/widgets/qr_twinkle_background.dart';
+import 'package:blast_qr/widgets/selection_bar.dart';
 import 'package:blast_qr/widgets/side_panel.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
@@ -133,10 +134,21 @@ class _HomeTabsPageState extends State<HomeTabsPage> {
       onDragDone: (details) {
         _sendPage.currentState?.setDragging(false);
         if (!_acceptsDrops) return;
-        setState(() => _currentTab = 0);
+        _selectTab(0);
         _sendPage.currentState?.sendDroppedFiles(details.files);
       },
-      child: _buildContent(context),
+      // While files are selected, back clears the selection.
+      child: Selector<SelectionBarController, bool>(
+        selector: (_, bar) => bar.isShowing,
+        builder: (context, selecting, child) => PopScope(
+          canPop: !selecting,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) context.read<SelectionBarController>().clear();
+          },
+          child: child!,
+        ),
+        child: _buildContent(context),
+      ),
     );
   }
 
@@ -213,10 +225,28 @@ class _HomeTabsPageState extends State<HomeTabsPage> {
                         child: SafeArea(
                           child: Container(
                             padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                            child: NavigationTabs(
-                              onTap: _selectTab,
-                              currentIndex: _currentTab,
-                              items: _tabItems(context),
+                            child: Consumer<SelectionBarController>(
+                              builder: (context, bar, child) =>
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    // Same height as the tabs, so the
+                                    // page doesn't move.
+                                    child: bar.isShowing
+                                        ? SizedBox(
+                                            height: NavigationTabs.height,
+                                            child: Center(
+                                              child: SelectionBar(
+                                                controller: bar,
+                                              ),
+                                            ),
+                                          )
+                                        : child,
+                                  ),
+                              child: NavigationTabs(
+                                onTap: _selectTab,
+                                currentIndex: _currentTab,
+                                items: _tabItems(context),
+                              ),
                             ),
                           ),
                         ),
@@ -236,7 +266,31 @@ class _HomeTabsPageState extends State<HomeTabsPage> {
                         onTabTap: _selectTab,
                         onSettingsTap: _openSettings,
                       ),
-                    Expanded(child: _pages()),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          _pages(),
+                          Positioned(
+                            left: 16,
+                            right: 16,
+                            bottom: 16,
+                            child: Center(
+                              child: Consumer<SelectionBarController>(
+                                builder: (context, bar, child) =>
+                                    AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      child: bar.isShowing
+                                          ? SelectionBar(controller: bar)
+                                          : const SizedBox.shrink(),
+                                    ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 )
               : _pages(),
@@ -245,7 +299,11 @@ class _HomeTabsPageState extends State<HomeTabsPage> {
     );
   }
 
-  void _selectTab(int index) => setState(() => _currentTab = index);
+  void _selectTab(int index) {
+    // A selection belongs to the page it was made on.
+    context.read<SelectionBarController>().clear();
+    setState(() => _currentTab = index);
+  }
 
   Future<void> _openSettings() async {
     setState(() => _settingsOpen = true);

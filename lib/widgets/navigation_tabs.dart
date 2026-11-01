@@ -9,7 +9,7 @@ class NavigationTabs extends StatelessWidget {
     required this.items,
   });
 
-  static const double _kNavigationTabsHeight = 72;
+  static const double height = 72;
 
   final void Function(int)? onTap;
   final int currentIndex;
@@ -23,7 +23,7 @@ class NavigationTabs extends StatelessWidget {
         return Stack(
           children: [
             Container(
-              height: _kNavigationTabsHeight,
+              height: height,
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
@@ -54,7 +54,7 @@ class NavigationTabs extends StatelessWidget {
               ),
             ),
             SizedBox(
-              height: _kNavigationTabsHeight,
+              height: height,
               child: Theme(
                 data: Theme.of(
                   context,
