@@ -134,7 +134,7 @@ class QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
       // A desktop window goes inactive whenever it loses focus, and reopening
       // the camera takes about a second.
       case AppLifecycleState.inactive:
-        if (!isDesktop) _closeForLifecycle();
+        if (!isDesktopOS) _closeForLifecycle();
       case AppLifecycleState.detached:
         break;
     }

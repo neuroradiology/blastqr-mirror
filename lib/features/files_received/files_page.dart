@@ -187,7 +187,7 @@ class _FilesPageState extends State<FilesPage>
       scrollDirection: Axis.horizontal,
       // On desktop the row stops at its ends. Bouncing made it jump back and
       // forth while scrolling with a trackpad.
-      physics: isDesktop ? const ClampingScrollPhysics() : null,
+      physics: isDesktopOS ? const ClampingScrollPhysics() : null,
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Row(
         spacing: 8,
@@ -224,6 +224,7 @@ class _FilesPageState extends State<FilesPage>
             selected: _selection.contains(item),
             showCheckmark: _selection.length > 1,
             onTap: () => _selection.tap(item, openItems),
+            onLongPress: () => _selection.longPress(item),
             onSecondaryTap: () => _selection.secondaryTap(item, openItems),
           );
         },
@@ -264,11 +265,11 @@ class _FilesPageState extends State<FilesPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: isDesktop
+      backgroundColor: context.useDesktopLayout
           ? context.translucentSurface
           : Colors.transparent,
       extendBodyBehindAppBar: true,
-      appBar: isDesktop
+      appBar: context.useDesktopLayout
           ? null
           : AppBar(
               title: const LogoWidget(),
@@ -337,7 +338,7 @@ class _FilesPageState extends State<FilesPage>
             slivers: [
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: isDesktop
+                  height: context.useDesktopLayout
                       ? 12
                       : MediaQuery.of(context).padding.top - _chipsOverlap,
                 ),
@@ -348,21 +349,21 @@ class _FilesPageState extends State<FilesPage>
                   hasScrollBody: false,
                   child: Center(child: Text(context.l10n.no_files_msg)),
                 )
-              else if (isDesktop)
+              else if (context.useDesktopLayout)
                 _buildCompactList(items)
               else
                 _buildTiles(groupByDay(items)),
               SliverToBoxAdapter(
                 child: SizedBox(
                   // On desktop, room for the selection bar while it shows.
-                  height: isDesktop
+                  height: context.useDesktopLayout
                       ? 16 + (showsSelectionBar ? SelectionBar.height + 16 : 0)
                       : MediaQuery.of(context).padding.bottom,
                 ),
               ),
             ],
           );
-          if (!isDesktop) return list;
+          if (!context.useDesktopLayout) return list;
           return FileListKeyboard(
             selection: _selection,
             autofocus: true,

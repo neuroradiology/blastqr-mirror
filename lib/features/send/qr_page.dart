@@ -455,7 +455,9 @@ class _QrPageState extends State<QrPage> {
 class _QrBoxLayout extends SingleChildLayoutDelegate {
   const _QrBoxLayout();
 
-  static const _counterHeight = 16.0;
+  /// The streaming widget keeps even margins around the code when its box
+  /// is this much taller than wide.
+  static const _counterHeight = 20.0;
 
   double _width(BoxConstraints constraints) =>
       (constraints.maxHeight - _counterHeight).clamp(0.0, constraints.maxWidth);

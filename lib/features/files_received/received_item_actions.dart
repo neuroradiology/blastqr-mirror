@@ -44,7 +44,7 @@ mixin ReceivedItemActions<T extends StatefulWidget> on State<T> {
           context,
           file,
           onOpen: () => _onTapOpen(file),
-          onShowInFileManager: isDesktop
+          onShowInFileManager: isDesktopOS
               ? () => _onTapShowInFileManager(file.file)
               : null,
           onSaveToDownloads: () => _trySaveToDownloads(file.file),

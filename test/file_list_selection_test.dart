@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:blast_qr/widgets/file_list_selection.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -132,6 +133,32 @@ void main() {
     items = ['d', 'c'];
 
     expect(selection.selected, ['d']);
+  });
+
+  group('touch', () {
+    setUp(
+      () => selection.trackPointer(
+        const PointerDownEvent(kind: PointerDeviceKind.touch),
+      ),
+    );
+
+    test('a tap opens the item', () {
+      selection.tap('b', open);
+
+      expect(opened, [
+        ['b'],
+      ]);
+      expect(selection.isEmpty, isTrue);
+    });
+
+    test('a long-press starts selecting, then taps toggle', () {
+      selection.longPress('b');
+      selection.tap('d', open);
+      selection.tap('b', open);
+
+      expect(selection.selected, ['d']);
+      expect(opened, isEmpty);
+    });
   });
 
   group('FileListKeyboard', () {

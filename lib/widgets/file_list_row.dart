@@ -15,6 +15,7 @@ class FileListRow extends StatelessWidget {
     required this.selected,
     required this.showCheckmark,
     required this.onTap,
+    this.onLongPress,
     this.onSecondaryTap,
     this.margin = const EdgeInsets.symmetric(horizontal: 8),
   });
@@ -38,6 +39,7 @@ class FileListRow extends StatelessWidget {
   final bool selected;
   final bool showCheckmark;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onSecondaryTap;
   final EdgeInsetsGeometry margin;
 
@@ -66,6 +68,7 @@ class FileListRow extends StatelessWidget {
             // inside them.
             canRequestFocus: false,
             onTap: onTap,
+            onLongPress: onLongPress,
             child: SizedBox(
               height: 34,
               child: Padding(

@@ -211,7 +211,7 @@ class _HomeTabsPageState extends State<HomeTabsPage> {
           extendBodyBehindAppBar: true,
           extendBody: true,
           backgroundColor: Colors.transparent,
-          bottomNavigationBar: canScanWithCamera && !isDesktop
+          bottomNavigationBar: canScanWithCamera && !context.useDesktopLayout
               ? Consumer<NavBarVisibility>(
                   builder: (context, navBar, child) {
                     return AnimatedSlide(
@@ -255,7 +255,7 @@ class _HomeTabsPageState extends State<HomeTabsPage> {
                   },
                 )
               : null,
-          body: isDesktop
+          body: context.useDesktopLayout
               ? Row(
                   children: [
                     if (MediaQuery.sizeOf(context).width >=

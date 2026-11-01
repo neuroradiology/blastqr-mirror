@@ -62,7 +62,7 @@ class SendPageState extends State<SendPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
-      appBar: isDesktop
+      appBar: context.useDesktopLayout
           ? null
           : AppBar(
               title: const LogoWidget(),
@@ -85,7 +85,7 @@ class SendPageState extends State<SendPage> {
                 ),
               ],
             ),
-      body: isDesktop ? _buildDesktopBody() : _buildPhoneBody(),
+      body: context.useDesktopLayout ? _buildDesktopBody() : _buildPhoneBody(),
     );
   }
 
@@ -93,7 +93,7 @@ class SendPageState extends State<SendPage> {
   /// and the recents list right under them.
   Widget _buildPhoneBody() {
     final buttons = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         spacing: 8,
@@ -104,13 +104,7 @@ class SendPageState extends State<SendPage> {
             subtitle: context.l10n.send_file_subtitle,
             onTap: _pickFileToEncode,
           ),
-          _SendCard(
-            icon: HugeIcons.strokeRoundedImageAdd01,
-            title: context.l10n.send_picture,
-            subtitle: context.l10n.send_picture_subtitle,
-            flipIcon: true,
-            onTap: _pickMediaToEncode,
-          ),
+          _photosCard(),
         ],
       ),
     );
@@ -143,8 +137,21 @@ class SendPageState extends State<SendPage> {
 
   /// The drop zone alone in the middle, or with recents the top two thirds
   /// of the page and the recents list the rest.
+  Widget _photosCard() => _SendCard(
+    icon: HugeIcons.strokeRoundedImageAdd01,
+    title: context.l10n.send_picture,
+    subtitle: context.l10n.send_picture_subtitle,
+    flipIcon: true,
+    onTap: _pickMediaToEncode,
+  );
+
   Widget _buildDesktopBody() {
     final dropZone = DropZone(highlighted: _dragging, onTap: _pickFileToEncode);
+    // Tablets and Android desktop mode keep the photo library, which the
+    // file picker can't always reach.
+    final photos = [
+      if (!isDesktopOS) ...[const SizedBox(height: 8), _photosCard()],
+    ];
     final unsupported = Text(context.l10n.desktop_receive_unsupported);
     if (_recentFiles.isEmpty) {
       return Column(
@@ -155,8 +162,14 @@ class SendPageState extends State<SendPage> {
             child: Center(
               child: SizedBox(
                 width: _desktopContentWidth,
-                height: 280,
-                child: dropZone,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: 280, child: dropZone),
+                    ...photos,
+                  ],
+                ),
               ),
             ),
           ),
@@ -183,6 +196,7 @@ class SendPageState extends State<SendPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(flex: 2, child: dropZone),
+              ...photos,
               const SizedBox(height: 24),
               Expanded(
                 child: RecentFilesList(

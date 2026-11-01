@@ -5,9 +5,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// File manager style selection for a desktop list: click selects one item,
-/// Cmd/Ctrl-click toggles, Shift-click selects a range, double-click opens,
-/// and [move] steps through the items for the arrow keys.
+/// Selection for a desktop list. With a mouse it works like a file manager:
+/// click selects one item, Cmd/Ctrl-click toggles, Shift-click selects a
+/// range and double-click opens. With touch (tablets, touchscreens) it works
+/// like on phones: tap opens, long-press starts selecting. [move] steps
+/// through the items for the arrow keys.
 class FileListSelection<T> extends ChangeNotifier {
   FileListSelection(this._items);
 
@@ -22,6 +24,7 @@ class FileListSelection<T> extends ChangeNotifier {
   // The last click, to detect double-clicks without delaying single clicks.
   T? _lastClicked;
   DateTime _lastClickTime = DateTime(0);
+  PointerDeviceKind _pointerKind = PointerDeviceKind.mouse;
 
   /// Goes on the row of [cursor], so [move] can scroll it into view.
   final cursorKey = GlobalKey();
@@ -74,11 +77,38 @@ class FileListSelection<T> extends ChangeNotifier {
       ..add(item);
   }
 
-  /// A row click: selects with the modifier keys, and calls [open] with
-  /// the item on a plain double-click.
+  /// Called by [FileListKeyboard] for each press, to tell mouse from touch.
+  void trackPointer(PointerDownEvent event) => _pointerKind = event.kind;
+
+  bool get _isTouch => switch (_pointerKind) {
+    PointerDeviceKind.touch ||
+    PointerDeviceKind.stylus ||
+    PointerDeviceKind.invertedStylus => true,
+    _ => false,
+  };
+
+  /// A row tap. With a mouse it selects with the modifier keys and calls
+  /// [open] on a double-click. With touch it calls [open] right away, or
+  /// adds to and removes from a selection that was started.
   void tap(T item, void Function(List<T> items) open) {
     focusNode.requestFocus();
+    if (_isTouch) {
+      if (isEmpty) {
+        open([item]);
+      } else {
+        toggle(item);
+      }
+      return;
+    }
     if (_click(item)) open([item]);
+  }
+
+  /// A long-press, with touch, starts selecting.
+  void longPress(T item) {
+    focusNode.requestFocus();
+    _toggle(item);
+    _anchor = _cursor = item;
+    notifyListeners();
   }
 
   /// A right-click opens the whole selection when [item] is part of it,
@@ -172,7 +202,8 @@ class FileListSelection<T> extends ChangeNotifier {
   }
 }
 
-/// The keys and clicks around a desktop file list: arrows and Tab move the
+/// The keys and clicks around a desktop file list: tells mouse from touch
+/// for [FileListSelection.tap], and arrows and Tab move the
 /// selection (Shift+arrows grow it), Space or Enter open it, and Esc or a
 /// click on empty space clears it. Tab past the first or last item falls
 /// through to the normal focus traversal.
@@ -192,11 +223,20 @@ class FileListKeyboard<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
-      focusNode: selection.focusNode,
-      autofocus: autofocus,
-      onKeyEvent: _onKey,
-      child: GestureDetector(onTap: selection.clear, child: child),
+    return Listener(
+      onPointerDown: selection.trackPointer,
+      child: Focus(
+        focusNode: selection.focusNode,
+        autofocus: autofocus,
+        onKeyEvent: _onKey,
+        // A click on empty space clears, like in a file manager.
+        child: GestureDetector(
+          onTap: () {
+            if (!selection._isTouch) selection.clear();
+          },
+          child: child,
+        ),
+      ),
     );
   }
 

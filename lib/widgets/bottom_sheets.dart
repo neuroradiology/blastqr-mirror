@@ -292,7 +292,7 @@ Future<T?> showSheet<T>({
 }) {
   // Closes the phone keyboard. On desktop focus stays, so it's restored when
   // the dialog closes, like the selection keys in a file list.
-  if (!isDesktop) FocusManager.instance.primaryFocus?.unfocus();
+  if (!context.useDesktopLayout) FocusManager.instance.primaryFocus?.unfocus();
   final color =
       backgroundColor ?? Theme.of(context).colorScheme.primaryContainer;
   final content = _SheetContent(
@@ -302,7 +302,7 @@ Future<T?> showSheet<T>({
     messageBottomPadding: messageBottomPadding,
     body: body,
   );
-  if (isDesktop) {
+  if (context.useDesktopLayout) {
     return showDialog<T>(
       context: context,
       builder: (context) => Dialog(

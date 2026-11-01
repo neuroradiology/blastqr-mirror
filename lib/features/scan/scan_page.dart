@@ -145,7 +145,7 @@ class _ScanPageState extends State<ScanPage> {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: isDesktop ? null : const LogoWidget(),
+          title: context.useDesktopLayout ? null : const LogoWidget(),
           centerTitle: true,
           toolbarHeight: 80,
           surfaceTintColor: Colors.transparent,
@@ -192,7 +192,7 @@ class _ScanPageState extends State<ScanPage> {
             ],
           ),
           actions: [
-            if (!isDesktop)
+            if (!context.useDesktopLayout)
               CircleButton(
                 onPressed: () async {
                   _setCameraOn(false);

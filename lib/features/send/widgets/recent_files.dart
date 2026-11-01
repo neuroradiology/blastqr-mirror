@@ -173,6 +173,7 @@ class _RecentFilesListState extends State<RecentFilesList>
                   showCheckmark: _selection.length > 1,
                   margin: EdgeInsets.zero,
                   onTap: () => _selection.tap(entry, _send),
+                  onLongPress: () => _selection.longPress(entry),
                   onSecondaryTap: () => _selection.secondaryTap(entry, _send),
                 );
               },

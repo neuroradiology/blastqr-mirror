@@ -88,9 +88,9 @@ void main() {
   testWidgets('dialogs open from the list and keys work after', (tester) async {
     await pumpPage(tester);
 
-    await tester.tap(find.text('f1.txt'));
+    await tester.tap(find.text('f1.txt'), kind: PointerDeviceKind.mouse);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
-    await tester.tap(find.text('f2.txt'));
+    await tester.tap(find.text('f2.txt'), kind: PointerDeviceKind.mouse);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
     await tester.pump();
     expect(selectedNames(tester), ['f1.txt', 'f2.txt']);
@@ -108,11 +108,15 @@ void main() {
     await tester.pump();
     expect(selectedNames(tester), ['f3.txt']);
 
-    await tester.tap(find.text('f0.txt'), buttons: kSecondaryButton);
+    await tester.tap(
+      find.text('f0.txt'),
+      buttons: kSecondaryButton,
+      kind: PointerDeviceKind.mouse,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsOneWidget);
     expect(selectedNames(tester), ['f0.txt']);
-  }, skip: !isDesktop);
+  }, skip: !isDesktopOS);
 
   testWidgets('the selection bar shows the count and opens or clears', (
     tester,
@@ -123,7 +127,7 @@ void main() {
     expect(find.byType(SelectionBar), findsNothing);
 
     // One file: the arrow opens its own options.
-    await tester.tap(find.text('f1.txt'));
+    await tester.tap(find.text('f1.txt'), kind: PointerDeviceKind.mouse);
     await step(tester);
     expect(find.text('1 selected'), findsOneWidget);
     await tester.tap(
@@ -141,7 +145,7 @@ void main() {
 
     // Several: the arrow opens the dialog for all of them.
     await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
-    await tester.tap(find.text('f3.txt'));
+    await tester.tap(find.text('f3.txt'), kind: PointerDeviceKind.mouse);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
     await step(tester);
     expect(find.text('3 selected'), findsOneWidget);
@@ -156,13 +160,13 @@ void main() {
     await step(tester);
     expect(find.byType(SelectionBar), findsNothing);
     expect(selectedNames(tester), isEmpty);
-  }, skip: !isDesktop);
+  }, skip: !isDesktopOS);
 
   testWidgets('back clears the selection instead of leaving', (tester) async {
     await pumpPage(tester, home: const HomeTabsPage());
     await tester.tap(find.text('Received'));
     await settle(tester);
-    await tester.tap(find.text('f1.txt'));
+    await tester.tap(find.text('f1.txt'), kind: PointerDeviceKind.mouse);
     await step(tester);
     expect(find.byType(SelectionBar), findsOneWidget);
 
@@ -174,7 +178,28 @@ void main() {
     expect(find.byType(SelectionBar), findsNothing);
     expect(selectedNames(tester), isEmpty);
     expect(find.byType(HomeTabsPage), findsOneWidget);
-  }, skip: !isDesktop);
+  }, skip: !isDesktopOS);
+
+  testWidgets('touch works like on phones', (tester) async {
+    await pumpPage(tester);
+
+    // A tap opens the file.
+    await tester.tap(find.text('f1.txt'));
+    await tester.pumpAndSettle();
+    expect(find.text('File options'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    // A long-press starts selecting, then taps add and remove.
+    await tester.longPress(find.text('f1.txt'));
+    await tester.tap(find.text('f3.txt'));
+    await tester.pump();
+    expect(selectedNames(tester), ['f1.txt', 'f3.txt']);
+    await tester.tap(find.text('f1.txt'));
+    await tester.pump();
+    expect(selectedNames(tester), ['f3.txt']);
+    expect(find.byType(Dialog), findsNothing);
+  }, skip: !isDesktopOS);
 
   testWidgets('files changed by other apps show up', (tester) async {
     await pumpPage(tester);
@@ -194,5 +219,5 @@ void main() {
 
     // Stops the folder watchers before the folder is deleted.
     await tester.pumpWidget(const SizedBox());
-  }, skip: !isDesktop);
+  }, skip: !isDesktopOS);
 }
