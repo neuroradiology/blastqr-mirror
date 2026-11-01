@@ -105,6 +105,7 @@
   "sending_settings": "전송 설정",
   "receiving_settings": "수신 설정",
   "restore_defaults": "기본값 복원",
+  "reset_to_default": "기본값으로 재설정",
   "restore_defaults_msg": "이 설정을 기본값으로 복원하시겠습니까?",
   "qr_codes_section": "QR 코드",
   "chunk_length_hint": "2935바이트는 대부분의 기기에서 최상의 성능을 위한 권장 값입니다",

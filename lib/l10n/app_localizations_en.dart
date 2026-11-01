@@ -341,6 +341,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restore_defaults => 'Restore';
 
   @override
+  String get reset_to_default => 'Reset to default';
+
+  @override
   String get restore_defaults_msg =>
       'Are you sure you want to restore these settings to their default values?';
 

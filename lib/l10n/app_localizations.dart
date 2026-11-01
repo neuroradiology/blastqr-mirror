@@ -720,6 +720,12 @@ abstract class AppLocalizations {
   /// **'Restore'**
   String get restore_defaults;
 
+  /// No description provided for @reset_to_default.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get reset_to_default;
+
   /// No description provided for @restore_defaults_msg.
   ///
   /// In en, this message translates to:

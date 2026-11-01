@@ -104,6 +104,7 @@
   "sending_settings": "Enviament",
   "receiving_settings": "Recepció",
   "restore_defaults": "Restaura",
+  "reset_to_default": "Restableix el valor per defecte",
   "restore_defaults_msg": "Segur que vols restaurar aquesta configuració als seus valors predeterminats?",
   "qr_codes_section": "Codis QR",
   "chunk_length_hint": "2935 bytes és el valor recomanat per al millor rendiment a la majoria de dispositius",

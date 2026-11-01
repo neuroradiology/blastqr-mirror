@@ -247,34 +247,35 @@ Future<void> showMessage({
     context: context,
     title: title,
     backgroundColor: backgroundColor,
-    body: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(message, style: const TextStyle(fontSize: 16)),
-          const SizedBox(height: 16),
-          if (confirmTitle != null)
-            ElevatedButton(
-              onPressed: () {
-                onConfirmTap?.call();
-                Navigator.of(context).pop();
-              },
-              style: confirmButtonStyle,
-              child: Text(confirmTitle),
-            ),
-          const SizedBox(height: 8),
-          if (secondaryTitle != null)
-            OutlinedButton(
-              onPressed:
-                  onSecondaryTap ??
-                  () {
-                    Navigator.of(context).pop();
-                  },
-              style: secondaryButtonStyle,
-              child: Text(secondaryTitle),
-            ),
-        ],
+    // Closes with the sheet's own context: [context] can belong to a nested
+    // navigator (the settings pane) while desktop dialogs open above it.
+    body: Builder(
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 16),
+            if (confirmTitle != null)
+              ElevatedButton(
+                onPressed: () {
+                  onConfirmTap?.call();
+                  Navigator.of(sheetContext).pop();
+                },
+                style: confirmButtonStyle,
+                child: Text(confirmTitle),
+              ),
+            const SizedBox(height: 8),
+            if (secondaryTitle != null)
+              OutlinedButton(
+                onPressed:
+                    onSecondaryTap ?? () => Navigator.of(sheetContext).pop(),
+                style: secondaryButtonStyle,
+                child: Text(secondaryTitle),
+              ),
+          ],
+        ),
       ),
     ),
   );
@@ -301,6 +302,7 @@ Future<T?> showSheet<T>({
     titleTrailing: titleTrailing,
     messageBottomPadding: messageBottomPadding,
     body: body,
+    showClose: context.useDesktopLayout,
   );
   if (context.useDesktopLayout) {
     return showDialog<T>(
@@ -313,7 +315,8 @@ Future<T?> showSheet<T>({
         child: SizedBox(
           width: 440,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.only(top: 24, bottom: 8),
+            // The close button already adds room above the title.
+            padding: const EdgeInsets.only(top: 12, bottom: 8),
             child: content,
           ),
         ),
@@ -354,6 +357,7 @@ class _SheetContent extends StatelessWidget {
     required this.titleTrailing,
     required this.messageBottomPadding,
     required this.body,
+    required this.showClose,
   });
 
   final String title;
@@ -362,6 +366,9 @@ class _SheetContent extends StatelessWidget {
   final double messageBottomPadding;
   final Widget body;
 
+  /// Dialogs on desktop, which can't be swiped away like sheets.
+  final bool showClose;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -369,12 +376,25 @@ class _SheetContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          padding: EdgeInsets.fromLTRB(16, 0, showClose ? 8 : 16, 0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
               ?titleTrailing,
+              if (showClose)
+                IconButton(
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedCancel01,
+                    color: context.color.onSurface,
+                  ),
+                ),
             ],
           ),
         ),
@@ -480,8 +500,12 @@ Future<void> showSliderSheet(
     title: title,
     message: message,
     titleTrailing: IconButton(
+      tooltip: context.l10n.reset_to_default,
       onPressed: () => sliderKey.currentState?.reset(),
-      icon: const HugeIcon(icon: HugeIcons.strokeRoundedUndo),
+      icon: HugeIcon(
+        icon: HugeIcons.strokeRoundedUndo,
+        color: context.color.onSurface,
+      ),
     ),
     body: Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),

@@ -333,6 +333,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get restore_defaults => '기본값 복원';
 
   @override
+  String get reset_to_default => '기본값으로 재설정';
+
+  @override
   String get restore_defaults_msg => '이 설정을 기본값으로 복원하시겠습니까?';
 
   @override

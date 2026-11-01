@@ -341,6 +341,9 @@ class AppLocalizationsCa extends AppLocalizations {
   String get restore_defaults => 'Restaura';
 
   @override
+  String get reset_to_default => 'Restableix el valor per defecte';
+
+  @override
   String get restore_defaults_msg =>
       'Segur que vols restaurar aquesta configuració als seus valors predeterminats?';
 
