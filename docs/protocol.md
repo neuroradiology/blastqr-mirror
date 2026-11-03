@@ -72,23 +72,10 @@ called the stream key.
 
 ## RaptorQ packet
 
-```
-offset  size  field
-0       1     SBN   source block number
-1       3     ESI   encoding symbol id
-4       T     symbol data
-```
-
-If the ESI is lower than the block's number of source symbols, the packet is a
-source packet. Otherwise it's a repair packet. Repair ESIs start at K, the
-block's number of source symbols, as RFC 6330 specifies. Version 2 started them
-at K', the padded block size, so the two versions can't decode each other's
-repair packets.
-
-Both sides build RaptorQ with the default parameters of the `raptorq` crate,
-`ObjectTransmissionInformation::with_defaults(transfer length, T)`. That way
-the receiver can work out the block layout from the header alone. Large
-transfers are split into blocks of at most 56,403 symbols.
+A packet as serialized by the [raptorq](https://crates.io/crates/raptorq)
+crate, version 2.0.1. Both sides use
+`ObjectTransmissionInformation::with_defaults(transfer length, T)`, so the
+receiver can work out the block layout from the header alone.
 
 T is a multiple of 8. The reference sender uses T between 96 and 2928.
 
@@ -96,8 +83,8 @@ T is a multiple of 8. The reference sender uses T between 96 and 2928.
 
 The sender first sends all source packets, block by block. After that it
 sends new repair packets forever, one per block in turn: block 0 repair 0,
-block 1 repair 0, and so on, then block 0 repair 1. The ESI has 24 bits, so
-repair ids would only start repeating after about 16 million repair packets
+block 1 repair 0, and so on, then block 0 repair 1. Packet ids have 24 bits,
+so repair ids would only start repeating after about 16 million repair packets
 per block.
 
 ## Transfer object
@@ -227,7 +214,7 @@ The first valid frame sets the stream key, and the decoder is built for it.
 - Packets for a block that doesn't exist are dropped.
 
 The camera reads the same QR code several times, so the receiver skips packets
-it already has, using the SBN and ESI.
+it already has, using the packet's first 4 bytes (block number and packet id).
 
 ### Rebuilding the file
 
