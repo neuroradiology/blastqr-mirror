@@ -1,4 +1,4 @@
-# BlastQR transfer protocol, version 2
+# BlastQR transfer protocol, version 3
 
 BlastQR sends a file from one device's screen to another device's camera as a
 stream of QR codes. This document describes what's in those QR codes and what
@@ -26,7 +26,7 @@ All integers are big-endian.
 ```
 offset  size  field
 0       3     signature       "bQR" (0x62 0x51 0x52)
-3       1     version         2
+3       1     version         3
 4       1     flags
 5       1     kind            0 = file
 6       2     session id      random per transfer, 1 to 65535
@@ -80,7 +80,10 @@ offset  size  field
 ```
 
 If the ESI is lower than the block's number of source symbols, the packet is a
-source packet. Otherwise it's a repair packet.
+source packet. Otherwise it's a repair packet. Repair ESIs start at K, the
+block's number of source symbols, as RFC 6330 specifies. Version 2 started them
+at K', the padded block size, so the two versions can't decode each other's
+repair packets.
 
 Both sides build RaptorQ with the default parameters of the `raptorq` crate,
 `ObjectTransmissionInformation::with_defaults(transfer length, T)`. That way
@@ -203,10 +206,10 @@ limits files to about 144 MB. With T = 2928 it allows about 4.3 GB.
 | the code | the receiver |
 |---|---|
 | doesn't start with `bQR` | treats it as an ordinary QR code |
-| has a version above 2 | asks the user to update |
+| has a version above 3 | asks the user to update |
 | has an unknown must-understand flag | asks the user to update |
-| has a version below 2, or the wrong length | ignores it |
-| is a valid version 2 frame | decodes it |
+| has a version below 3, or the wrong length | ignores it |
+| is a valid version 3 frame | decodes it |
 
 The receiver also ignores frames whose symbol size is below 64 or not a
 multiple of 8, whose transfer length is below 2, or that would need more than
