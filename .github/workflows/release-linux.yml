@@ -1,0 +1,83 @@
+name: Release Linux
+
+on:
+  push:
+    tags: ['v*']
+    branches: ['ci-linux'] 
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: 3.47.8
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+
+      - name: Install Flutter
+        run: |
+          git clone --depth 1 --branch "$FLUTTER_VERSION" \
+            https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Check tag matches pubspec version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME doesn't match pubspec version $version"
+            exit 1
+          fi
+
+      - name: Build
+        env:
+          # The app only plays generated WAVs, so skip SoLoud's prebuilt
+          # Ogg/Opus/FLAC libraries (x64-only).
+          NO_XIPH_LIBS: 1
+        run: |
+          flutter --disable-analytics
+          flutter pub get
+          flutter build linux --release
+
+      - name: Package
+        run: |
+          name="blastqr-${GITHUB_REF_NAME}-linux-${{ matrix.arch }}"
+          tar -czf "$name.tar.gz" -C build/linux/${{ matrix.arch }}/release \
+            --transform "s/^bundle/blastqr/" bundle
+          echo "ARCHIVE=$name.tar.gz" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: ${{ env.ARCHIVE }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: '*.tar.gz'
+          draft: true
