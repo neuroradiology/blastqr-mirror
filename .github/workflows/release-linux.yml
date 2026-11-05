@@ -3,7 +3,6 @@ name: Release Linux
 on:
   push:
     tags: ['v*']
-    branches: ['ci-linux'] 
   workflow_dispatch:
 
 env:
@@ -37,6 +36,14 @@ jobs:
         run: |
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- 18
           echo /usr/lib/llvm-18/bin >> "$GITHUB_PATH"
+
+      # GitHub's runners have rustup; local act images don't.
+      - name: Install Rust
+        run: |
+          if ! command -v rustup >/dev/null; then
+            curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
+            echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          fi
 
       - name: Install Flutter
         run: |
