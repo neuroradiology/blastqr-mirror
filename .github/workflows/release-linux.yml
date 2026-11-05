@@ -3,7 +3,6 @@ name: Release Linux
 on:
   push:
     tags: ['v*']
-    branches: ['ci-flatpak']
   workflow_dispatch:
 
 env:
