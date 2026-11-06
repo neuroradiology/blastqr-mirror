@@ -89,11 +89,11 @@ class _ScanPageState extends State<ScanPage> {
   DateTime? _steadySince;
   DateTime? _lastReadAt;
 
-  /// Quick taps in a row; the third restarts the camera.
+  /// Quick taps in a row; the second restarts the camera.
   int _taps = 0;
   final _sinceLastTap = Stopwatch();
 
-  /// Where the camera refocuses once it's reopened by a triple tap.
+  /// Where the camera refocuses once it's reopened by a double tap.
   Offset? _refocusAt;
 
   @override
@@ -932,7 +932,7 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
-  /// Tapping again and again usually means scanning is stuck, which focusing
+  /// A quick second tap usually means scanning is stuck, which focusing
   /// doesn't fix but reopening the camera does.
   void _onPreviewTap(Offset tap) {
     _taps =
@@ -943,7 +943,7 @@ class _ScanPageState extends State<ScanPage> {
     _sinceLastTap
       ..reset()
       ..start();
-    if (_taps < 3) {
+    if (_taps < 2) {
       _focusAt(tap);
       return;
     }
