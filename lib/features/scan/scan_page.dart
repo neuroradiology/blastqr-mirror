@@ -287,16 +287,17 @@ class _ScanPageState extends State<ScanPage> {
                 ),
               ),
             // Top gradient
-            Container(
-              height: 92 + MediaQuery.of(context).viewPadding.top,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black, Colors.transparent],
+            if (!context.useDesktopLayout)
+              Container(
+                height: 92 + MediaQuery.of(context).viewPadding.top,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black, Colors.transparent],
+                  ),
                 ),
               ),
-            ),
             Align(
                   alignment: Alignment.topCenter,
                   child: SafeArea(
@@ -307,7 +308,11 @@ class _ScanPageState extends State<ScanPage> {
                 )
                 .animate(target: _isReceivingData ? 0 : 1)
                 .fade(delay: 1.seconds, begin: -0.5)
-                .moveY(delay: 1.seconds),
+                .moveY(
+                  delay: 1.seconds,
+                  begin: -24,
+                  end: context.useDesktopLayout ? -16 : 0,
+                ),
             Align(
                   alignment: Alignment.topCenter,
                   child: SafeArea(
@@ -318,7 +323,11 @@ class _ScanPageState extends State<ScanPage> {
                 )
                 .animate(target: _showLowSpeedWarning ? 1 : 0)
                 .fade(delay: 300.ms, begin: -0.5)
-                .moveY(delay: 300.ms),
+                .moveY(
+                  delay: 300.ms,
+                  begin: -24,
+                  end: context.useDesktopLayout ? -16 : 0,
+                ),
             ScanProgressWidget(
               chunkCount: _decodedChunkCount,
               speed: '${_speed.toStringAsFixed(1)}kB/s',
@@ -1102,13 +1111,14 @@ class _HelpMessageWidget extends StatelessWidget {
           ],
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           spacing: 12,
           children: [
             const HugeIcon(
               icon: HugeIcons.strokeRoundedInformationCircle,
               color: Colors.white,
             ),
-            Expanded(
+            Flexible(
               child: Text(message, style: const TextStyle(color: Colors.white)),
             ),
           ],
