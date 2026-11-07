@@ -71,6 +71,7 @@ class _ScanPageState extends State<ScanPage> {
   DateTime? _lowSpeedStartTime;
   late SoundFeedbackService _soundService;
   late AppSettings _appSettings;
+  late final NavBarVisibility _navBar;
   DateTime _latestScanStartTime = DateTime.now();
   ReceivingFileMetadata? _fileMetadata;
 
@@ -101,6 +102,7 @@ class _ScanPageState extends State<ScanPage> {
     super.initState();
     _createDecoder();
     _soundService = SoundFeedbackService();
+    _navBar = context.read<NavBarVisibility>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() => _cameraLoaded = true);
     });
@@ -144,6 +146,8 @@ class _ScanPageState extends State<ScanPage> {
     _decoder.dispose();
     DecodeStats.instance.endTransfer();
     _soundService.dispose();
+    // Leaving mid-transfer skips _reset. The tree is locked while disposing.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _navBar.show());
     super.dispose();
   }
 
@@ -500,7 +504,7 @@ class _ScanPageState extends State<ScanPage> {
     });
 
     // Hide bottom bar
-    context.read<NavBarVisibility>().hide();
+    _navBar.hide();
 
     if (_appSettings.hapticFeedback) {
       HapticFeedback.lightImpact();
@@ -920,7 +924,7 @@ class _ScanPageState extends State<ScanPage> {
     _unlockFocus();
 
     // Re-show bottom navigation
-    context.read<NavBarVisibility>().show();
+    _navBar.show();
 
     // Wait a second to start scanning again
     await Future.delayed(const Duration(seconds: 1));
