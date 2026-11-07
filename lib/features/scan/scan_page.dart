@@ -894,9 +894,9 @@ class _ScanPageState extends State<ScanPage> {
 
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(context.l10n.copied)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.copied, textAlign: TextAlign.center)),
+    );
   }
 
   Future<void> _saveRegularQRCode(String text) async {
@@ -907,7 +907,9 @@ class _ScanPageState extends State<ScanPage> {
       await saveScannedQrCode(text, await qrCodesDirectory());
       badgeCount.add();
     } catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+      messenger.showSnackBar(
+        SnackBar(content: Text(error.toString(), textAlign: TextAlign.center)),
+      );
     }
     navigator.pop();
   }
@@ -1081,7 +1083,9 @@ class _ScanPageState extends State<ScanPage> {
       OpenFile.open(file.file.path, type: file.type.mimeType ?? '');
     } catch (error) {
       Navigator.of(context).pop();
-      final snackBar = SnackBar(content: Text(error.toString()));
+      final snackBar = SnackBar(
+        content: Text(error.toString(), textAlign: TextAlign.center),
+      );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
   }
