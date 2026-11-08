@@ -1,15 +1,7 @@
-import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/widgets/strike_painter.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-/// Whether photos are sent as they are. Starts from the "compress photos by
-/// default" setting.
-ValueNotifier<bool> hdNotifier(BuildContext context) => ValueNotifier(
-  !Provider.of<AppSettings>(context, listen: false).compressPhotosByDefault,
-);
 
 /// Tapping switches [hd]: on sends photos as they are, off compresses them.
 class HdToggle extends StatelessWidget {

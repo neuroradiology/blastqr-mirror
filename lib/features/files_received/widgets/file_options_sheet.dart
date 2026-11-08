@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/send/send_options.dart';
 import 'package:blast_qr/features/send/send_plan.dart';
@@ -13,6 +14,7 @@ import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 /// The sheet that opens when tapping a received file. Send closes the sheet
 /// itself; the other callbacks decide when to close it.
@@ -27,7 +29,9 @@ Future<void> showFileOptionsSheet(
   required void Function(SendOptions options) onSend,
   required VoidCallback onDelete,
 }) {
-  final hd = hdNotifier(context);
+  final hd = ValueNotifier(
+    !Provider.of<AppSettings>(context, listen: false).compressPhotosByDefault,
+  );
   return showSheet(
     context: context,
     title: context.l10n.file_options,

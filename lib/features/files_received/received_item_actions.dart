@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/files_received/received_items.dart';
 import 'package:blast_qr/features/files_received/save_to_downloads.dart';
@@ -22,6 +23,7 @@ import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:open_file/open_file.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// What can be done with received items: the options dialogs, and opening,
@@ -98,7 +100,9 @@ mixin ReceivedItemActions<T extends StatefulWidget> on State<T> {
       selection.selected.map((item) => item.toFileWrapper()),
     );
     if (!mounted) return;
-    final hd = hdNotifier(context);
+    final hd = ValueNotifier(
+      !Provider.of<AppSettings>(context, listen: false).compressPhotosByDefault,
+    );
     final showsHd = files.any(isCompressibleImage);
     showSheet(
       context: context,

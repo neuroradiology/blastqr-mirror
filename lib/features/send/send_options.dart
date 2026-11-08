@@ -1,3 +1,4 @@
+import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/crypto/password.dart';
 import 'package:blast_qr/features/send/send_plan.dart';
@@ -11,6 +12,7 @@ import 'package:blast_qr/widgets/centered_with_trailing.dart';
 import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:provider/provider.dart';
 
 typedef SendOptions = ({
   String? password,
@@ -67,7 +69,9 @@ class _SendSheetState extends State<_SendSheet> {
   late final _nameController = TextEditingController(
     text: widget.files.first.name,
   );
-  late final _hd = hdNotifier(context);
+  late final _hd = ValueNotifier(
+    !Provider.of<AppSettings>(context, listen: false).compressPhotosByDefault,
+  );
   late final _showsHd = widget.files.any(isCompressibleImage);
 
   @override
