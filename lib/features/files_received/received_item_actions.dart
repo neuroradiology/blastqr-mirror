@@ -8,6 +8,7 @@ import 'package:blast_qr/features/files_received/widgets/qr_code_sheet.dart';
 import 'package:blast_qr/features/send/send_files.dart';
 import 'package:blast_qr/features/send/send_options.dart';
 import 'package:blast_qr/features/send/widgets/custom_password_sheet.dart';
+import 'package:blast_qr/features/send/widgets/hd_toggle.dart';
 import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
@@ -95,29 +96,44 @@ mixin ReceivedItemActions<T extends StatefulWidget> on State<T> {
       selection.selected.map((item) => item.toFileWrapper()),
     );
     if (!mounted) return;
+    final hd = hdNotifier(context);
     showSheet(
       context: context,
       title: context.l10n.files_selected(files.length),
       body: Column(
         children: [
-          FilesPreview(files: files),
+          HdTogglePreview(
+            files: files,
+            hd: hd,
+            preview: FilesPreview(
+              files: files,
+              maxShown: HdTogglePreview.showsToggle(files) ? 3 : 4,
+            ),
+          ),
           const SizedBox(height: 8),
           SendTile(
             onTap: () {
               Navigator.of(context).pop();
-              _sendSelectedFiles(files, plainSend);
+              _sendSelectedFiles(files, plainSend(compressImages: !hd.value));
             },
           ),
           SendEncryptedTile(
             onTap: () {
               Navigator.of(context).pop();
-              _sendSelectedFiles(files, encryptedSend());
+              _sendSelectedFiles(
+                files,
+                encryptedSend(compressImages: !hd.value),
+              );
             },
             onLongPress: () async {
               Navigator.of(context).pop();
               final password = await showCustomPasswordSheet(context);
               if (password == null || !mounted) return;
-              _sendSelectedFiles(files, (password: password, fileName: null));
+              _sendSelectedFiles(files, (
+                password: password,
+                fileName: null,
+                compressImages: !hd.value,
+              ));
             },
           ),
           if (Platform.isAndroid)

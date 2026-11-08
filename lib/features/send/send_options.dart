@@ -1,6 +1,7 @@
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/crypto/password.dart';
 import 'package:blast_qr/features/send/widgets/custom_password_sheet.dart';
+import 'package:blast_qr/features/send/widgets/hd_toggle.dart';
 import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
@@ -9,12 +10,20 @@ import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-typedef SendOptions = ({String? password, String? fileName});
+typedef SendOptions = ({
+  String? password,
+  String? fileName,
+  bool compressImages,
+});
 
-const SendOptions plainSend = (password: null, fileName: null);
+SendOptions plainSend({required bool compressImages}) =>
+    (password: null, fileName: null, compressImages: compressImages);
 
-SendOptions encryptedSend({String? fileName}) =>
-    (password: generatePassword(), fileName: fileName);
+SendOptions encryptedSend({String? fileName, required bool compressImages}) => (
+  password: generatePassword(),
+  fileName: fileName,
+  compressImages: compressImages,
+);
 
 /// Returns null if the user cancelled the send.
 Future<SendOptions?> chooseSendOptions(
@@ -34,7 +43,11 @@ Future<SendOptions?> chooseSendOptions(
   if (!context.mounted) return null;
   final password = await showCustomPasswordSheet(context);
   if (password == null) return null;
-  return (password: password, fileName: result.options.fileName);
+  return (
+    password: password,
+    fileName: result.options.fileName,
+    compressImages: result.options.compressImages,
+  );
 }
 
 typedef _SendSheetResult = ({SendOptions options, bool customPassword});
@@ -52,10 +65,12 @@ class _SendSheetState extends State<_SendSheet> {
   late final _nameController = TextEditingController(
     text: widget.files.first.name,
   );
+  late final _hd = hdNotifier(context);
 
   @override
   void dispose() {
     _nameController.dispose();
+    _hd.dispose();
     super.dispose();
   }
 
@@ -79,7 +94,11 @@ class _SendSheetState extends State<_SendSheet> {
     return Column(
       children: [
         if (widget.files.length == 1) ...[
-          FileThumbnail(file: file, size: 92),
+          HdTogglePreview(
+            files: widget.files,
+            hd: _hd,
+            preview: FileThumbnail(file: file, size: 92),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: TextField(
@@ -118,14 +137,30 @@ class _SendSheetState extends State<_SendSheet> {
             style: TextStyle(color: context.color.secondary),
           ),
         ] else
-          FilesPreview(files: widget.files),
+          HdTogglePreview(
+            files: widget.files,
+            hd: _hd,
+            preview: FilesPreview(
+              files: widget.files,
+              maxShown: HdTogglePreview.showsToggle(widget.files) ? 3 : 4,
+            ),
+          ),
         const SizedBox(height: 8),
-        SendTile(onTap: () => _close((password: null, fileName: _fileName))),
+        SendTile(
+          onTap: () => _close((
+            password: null,
+            fileName: _fileName,
+            compressImages: !_hd.value,
+          )),
+        ),
         SendEncryptedTile(
-          onTap: () => _close(encryptedSend(fileName: _fileName)),
+          onTap: () => _close(
+            encryptedSend(fileName: _fileName, compressImages: !_hd.value),
+          ),
           onLongPress: () => _close((
             password: null,
             fileName: _fileName,
+            compressImages: !_hd.value,
           ), customPassword: true),
         ),
         const SizedBox(height: 8),

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/send/send_options.dart';
 import 'package:blast_qr/features/send/widgets/custom_password_sheet.dart';
+import 'package:blast_qr/features/send/widgets/hd_toggle.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
@@ -24,6 +25,7 @@ Future<void> showFileOptionsSheet(
   required void Function(SendOptions options) onSend,
   required VoidCallback onDelete,
 }) {
+  final hd = hdNotifier(context);
   return showSheet(
     context: context,
     title: context.l10n.file_options,
@@ -33,24 +35,29 @@ Future<void> showFileOptionsSheet(
           file: file,
           detail: DateFormat('yyyy-MM-dd HH:mm:ss').format(file.modified),
           onTapThumbnail: onOpen,
+          hd: hd,
         ),
         const SizedBox(height: 8),
         SendTile(
           onTap: () {
             Navigator.of(context).pop();
-            onSend(plainSend);
+            onSend(plainSend(compressImages: !hd.value));
           },
         ),
         SendEncryptedTile(
           onTap: () {
             Navigator.of(context).pop();
-            onSend(encryptedSend());
+            onSend(encryptedSend(compressImages: !hd.value));
           },
           onLongPress: () async {
             Navigator.of(context).pop();
             final password = await showCustomPasswordSheet(context);
             if (password == null || !context.mounted) return;
-            onSend((password: password, fileName: null));
+            onSend((
+              password: password,
+              fileName: null,
+              compressImages: !hd.value,
+            ));
           },
         ),
         const _DottedDivider(),
@@ -127,19 +134,25 @@ class _FilePreview extends StatelessWidget {
     required this.file,
     required this.detail,
     this.onTapThumbnail,
+    required this.hd,
   });
 
   final FileWrapper file;
   final String detail;
   final VoidCallback? onTapThumbnail;
+  final ValueNotifier<bool> hd;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        GestureDetector(
-          onTap: onTapThumbnail,
-          child: FileThumbnail(file: file, size: 92),
+        HdTogglePreview(
+          files: [file],
+          hd: hd,
+          preview: GestureDetector(
+            onTap: onTapThumbnail,
+            child: FileThumbnail(file: file, size: 92),
+          ),
         ),
         const SizedBox(height: 8),
         Padding(
