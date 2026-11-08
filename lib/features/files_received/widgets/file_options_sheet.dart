@@ -2,11 +2,13 @@ import 'dart:io';
 
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/send/send_options.dart';
+import 'package:blast_qr/features/send/send_plan.dart';
 import 'package:blast_qr/features/send/widgets/custom_password_sheet.dart';
 import 'package:blast_qr/features/send/widgets/hd_toggle.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
+import 'package:blast_qr/widgets/centered_with_trailing.dart';
 import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -35,7 +37,9 @@ Future<void> showFileOptionsSheet(
           file: file,
           detail: DateFormat('yyyy-MM-dd HH:mm:ss').format(file.modified),
           onTapThumbnail: onOpen,
-          hd: hd,
+          thumbnailTrailing: isCompressibleImage(file)
+              ? HdToggle(hd: hd)
+              : null,
         ),
         const SizedBox(height: 8),
         SendTile(
@@ -134,22 +138,21 @@ class _FilePreview extends StatelessWidget {
     required this.file,
     required this.detail,
     this.onTapThumbnail,
-    required this.hd,
+    this.thumbnailTrailing,
   });
 
   final FileWrapper file;
   final String detail;
   final VoidCallback? onTapThumbnail;
-  final ValueNotifier<bool> hd;
+  final Widget? thumbnailTrailing;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        HdTogglePreview(
-          files: [file],
-          hd: hd,
-          preview: GestureDetector(
+        CenteredWithTrailing(
+          trailing: thumbnailTrailing,
+          child: GestureDetector(
             onTap: onTapThumbnail,
             child: FileThumbnail(file: file, size: 92),
           ),

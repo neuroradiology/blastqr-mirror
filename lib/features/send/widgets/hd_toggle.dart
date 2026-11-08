@@ -1,8 +1,6 @@
 import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
-import 'package:blast_qr/features/send/send_plan.dart';
 import 'package:blast_qr/l10n/extension.dart';
-import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/widgets/strike_painter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,52 +11,9 @@ ValueNotifier<bool> hdNotifier(BuildContext context) => ValueNotifier(
   !Provider.of<AppSettings>(context, listen: false).compressPhotosByDefault,
 );
 
-/// [preview] with the HD toggle beside it when any of [files] could be
-/// compressed.
-class HdTogglePreview extends StatelessWidget {
-  const HdTogglePreview({
-    super.key,
-    required this.files,
-    required this.hd,
-    required this.preview,
-  });
-
-  final List<FileWrapper> files;
-  final ValueNotifier<bool> hd;
-  final Widget preview;
-
-  static bool showsToggle(List<FileWrapper> files) =>
-      files.any(isCompressibleImage);
-
-  @override
-  Widget build(BuildContext context) {
-    if (!showsToggle(files)) return preview;
-    const gap = SizedBox(width: 12);
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // An invisible twin keeps the preview centred.
-          Visibility(
-            visible: false,
-            maintainSize: true,
-            maintainAnimation: true,
-            maintainState: true,
-            child: _HdToggle(hd: hd),
-          ),
-          gap,
-          preview,
-          gap,
-          _HdToggle(hd: hd),
-        ],
-      ),
-    );
-  }
-}
-
-class _HdToggle extends StatelessWidget {
-  const _HdToggle({required this.hd});
+/// Tapping switches [hd]: on sends photos as they are, off compresses them.
+class HdToggle extends StatelessWidget {
+  const HdToggle({super.key, required this.hd});
 
   final ValueNotifier<bool> hd;
 

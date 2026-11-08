@@ -6,19 +6,13 @@ import 'package:blast_qr/features/send/widgets/hd_toggle.dart';
 import 'package:blast_qr/l10n/app_localizations.dart';
 import 'package:blast_qr/model/file_type.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
+import 'package:blast_qr/widgets/centered_with_trailing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 FileWrapper _pdf(int size) => FileWrapper(
   file: File('doc.pdf'),
   type: FileType(extension: 'pdf', mimeType: 'application/pdf'),
-  size: size,
-  modified: DateTime(2026),
-);
-
-FileWrapper _photo(String extension, int size) => FileWrapper(
-  file: File('photo.$extension'),
-  type: FileType(extension: extension, mimeType: null),
   size: size,
   modified: DateTime(2026),
 );
@@ -124,53 +118,40 @@ void main() {
   });
 
   group('HD toggle', () {
-    Future<void> pumpPreview(
-      WidgetTester tester,
-      List<FileWrapper> files,
-      ValueNotifier<bool> hd,
-    ) => _pump(
-      tester,
-      // Like a sheet: a full-width column that centres its children.
-      Column(
-        children: [
-          const SizedBox(width: double.infinity),
-          HdTogglePreview(files: files, hd: hd, preview: const Text('preview')),
-        ],
-      ),
-    );
-
-    testWidgets('shows for a large photo and flips on tap', (tester) async {
+    testWidgets('flips on tap', (tester) async {
       final hd = ValueNotifier(false);
-      await pumpPreview(tester, [_photo('jpg', 2000000)], hd);
+      await _pump(tester, HdToggle(hd: hd));
 
-      await tester.tap(find.text('HD').hitTestable());
+      await tester.tap(find.text('HD'));
 
       expect(hd.value, isTrue);
-      expect(find.text('preview'), findsOneWidget);
     });
 
-    testWidgets('sits beside the preview, keeping it centred', (tester) async {
-      await pumpPreview(tester, [_photo('jpg', 2000000)], ValueNotifier(false));
+    testWidgets('sits beside the thumbnail, keeping it centred', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        // Like a sheet: a full-width column that centres its children.
+        Column(
+          children: [
+            const SizedBox(width: double.infinity),
+            CenteredWithTrailing(
+              trailing: HdToggle(hd: ValueNotifier(false)),
+              child: const Text('thumbnail'),
+            ),
+          ],
+        ),
+      );
 
       final screen = tester.getCenter(find.byType(Scaffold));
-      final preview = find.text('preview');
-      expect(tester.getCenter(preview).dx, screen.dx);
+      final thumbnail = find.text('thumbnail');
+      expect(tester.getCenter(thumbnail).dx, screen.dx);
       final toggle = find.text('HD').hitTestable();
       expect(
-        tester.getCenter(toggle).dx - tester.getTopRight(preview).dx,
+        tester.getCenter(toggle).dx - tester.getTopRight(thumbnail).dx,
         lessThan(40),
       );
-    });
-
-    testWidgets('hides for small photos and GIFs', (tester) async {
-      await pumpPreview(tester, [
-        _photo('jpg', 300000),
-        _photo('gif', 2000000),
-        _pdf(2000000),
-      ], ValueNotifier(false));
-
-      expect(find.text('HD'), findsNothing);
-      expect(find.text('preview'), findsOneWidget);
     });
   });
 }

@@ -1,11 +1,13 @@
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/crypto/password.dart';
+import 'package:blast_qr/features/send/send_plan.dart';
 import 'package:blast_qr/features/send/widgets/custom_password_sheet.dart';
 import 'package:blast_qr/features/send/widgets/hd_toggle.dart';
 import 'package:blast_qr/file_name_utils.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
+import 'package:blast_qr/widgets/centered_with_trailing.dart';
 import 'package:blast_qr/widgets/file_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -66,6 +68,7 @@ class _SendSheetState extends State<_SendSheet> {
     text: widget.files.first.name,
   );
   late final _hd = hdNotifier(context);
+  late final _showsHd = widget.files.any(isCompressibleImage);
 
   @override
   void dispose() {
@@ -94,10 +97,9 @@ class _SendSheetState extends State<_SendSheet> {
     return Column(
       children: [
         if (widget.files.length == 1) ...[
-          HdTogglePreview(
-            files: widget.files,
-            hd: _hd,
-            preview: FileThumbnail(file: file, size: 92),
+          CenteredWithTrailing(
+            trailing: _showsHd ? HdToggle(hd: _hd) : null,
+            child: FileThumbnail(file: file, size: 92),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -137,12 +139,11 @@ class _SendSheetState extends State<_SendSheet> {
             style: TextStyle(color: context.color.secondary),
           ),
         ] else
-          HdTogglePreview(
-            files: widget.files,
-            hd: _hd,
-            preview: FilesPreview(
+          CenteredWithTrailing(
+            trailing: _showsHd ? HdToggle(hd: _hd) : null,
+            child: FilesPreview(
               files: widget.files,
-              maxShown: HdTogglePreview.showsToggle(widget.files) ? 3 : 4,
+              maxShown: _showsHd ? 3 : 4,
             ),
           ),
         const SizedBox(height: 8),
