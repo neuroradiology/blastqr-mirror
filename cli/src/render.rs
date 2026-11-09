@@ -112,7 +112,7 @@ struct Placement {
     row: usize,
     /// Codes across and down.
     grid: (usize, usize),
-    /// Pixels per module on screen (image backends only).
+    /// Pixels per module on screen, rounded up (image backends only).
     module_px: usize,
     /// Cells covered, across and down.
     cells: (usize, usize),
@@ -144,23 +144,35 @@ fn place(backend: Backend, version: u8, count: usize, term: TermSize) -> Option<
         if cell_w == 0 || cell_h == 0 {
             return None;
         }
-        let (grid, module_px) = grids
+        // Kitty images are scaled to fill whole cells, so modules needn't be
+        // whole pixels there. iTerm2 draws them at their own size.
+        let scaled = backend == Backend::Kitty;
+        let (width, height) = if scaled {
+            (cell_w * term.cols, cell_h * term.code_rows())
+        } else {
+            (term.width_px, cell_h * term.code_rows())
+        };
+        let (grid, px) = grids
             .map(|grid| {
-                let px = (term.width_px / (grid.0 * tile))
-                    .min(cell_h * term.code_rows() / (grid.1 * tile));
-                (grid, px)
+                let px = (width as f64 / (grid.0 * tile) as f64)
+                    .min(height as f64 / (grid.1 * tile) as f64);
+                (grid, if scaled { px } else { px.floor() })
             })
-            .max_by_key(|&(_, px)| px)?;
-        if module_px < MIN_MODULE_PX {
+            .max_by(|a, b| a.1.total_cmp(&b.1))?;
+        if px < MIN_MODULE_PX as f64 {
             return None;
         }
-        let cols = (grid.0 * tile * module_px).div_ceil(cell_w);
-        let rows = (grid.1 * tile * module_px).div_ceil(cell_h);
+        let (w, h) = ((grid.0 * tile) as f64 * px, (grid.1 * tile) as f64 * px);
+        let (cols, rows) = if scaled {
+            ((w / cell_w as f64) as usize, (h / cell_h as f64) as usize)
+        } else {
+            ((w as usize).div_ceil(cell_w), (h as usize).div_ceil(cell_h))
+        };
         Some(Placement {
-            col: (term.cols - cols) / 2,
-            row: (term.code_rows() - rows) / 2,
+            col: term.cols.saturating_sub(cols) / 2,
+            row: term.code_rows().saturating_sub(rows) / 2,
             grid,
-            module_px,
+            module_px: px.ceil() as usize,
             cells: (cols, rows),
         })
     }
@@ -356,8 +368,7 @@ fn kitty(out: &mut String, canvas: &Canvas, p: Placement) {
             let _ = write!(
                 out,
                 "\x1b_Ga=T,f=100,i=1,q=2,C=1,c={},r={},m={more};{chunk}\x1b\\",
-                p.cells.0,
-                p.cells.1
+                p.cells.0, p.cells.1
             );
         } else {
             let _ = write!(out, "\x1b_Gm={more};{chunk}\x1b\\");
@@ -480,6 +491,21 @@ mod tests {
         // Too small for two: shows fewer.
         let r = Renderer::new(Backend::Half, 10, 4, term(70, 40));
         assert_eq!(r.codes(), 1);
+    }
+
+    #[test]
+    fn kitty_fills_the_width_with_fractional_modules() {
+        let t = TermSize {
+            cols: 216,
+            rows: 60,
+            width_px: 3456,
+            height_px: 2160,
+        };
+        // 4 tiles of 185 modules: 4.67 px each, not 4.
+        let p = place(Backend::Kitty, 40, 8, t).unwrap();
+        assert_eq!((p.grid, p.cells.0), ((4, 2), 216));
+        let p = place(Backend::Iterm, 40, 8, t).unwrap();
+        assert_eq!((p.grid, p.module_px), ((4, 2), 4));
     }
 
     #[test]
