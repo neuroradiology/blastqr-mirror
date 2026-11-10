@@ -49,10 +49,12 @@ class BundleFormatException implements Exception {
 /// the new files. Entry names are untrusted: only the cleaned last path
 /// segment is used, made unique in [directory].
 ///
-/// Only stored (uncompressed) entries are accepted, and the output may not be
-/// larger than the zip: entries can point at the same data, so a small zip
-/// could otherwise expand to fill the disk. On any error, files written so
-/// far are deleted.
+/// Bundles are zipped without compression (the whole transfer is gzipped
+/// separately), so a real bundle extracts to slightly less than the zip's
+/// size. Compressed entries are refused, and so is output larger than the
+/// zip: that only happens when a crafted zip has entries sharing data, which
+/// could otherwise fill the disk. On any error, files written so far are
+/// deleted.
 Future<List<String>> extractBundle(String zipPath, Directory directory) {
   final dirPath = directory.path;
   return Isolate.run(() {
