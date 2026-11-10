@@ -90,6 +90,13 @@ class RaptorQrStreamingWidget extends StatefulWidget {
 
   static const double nearlyCompleteFraction = 0.8;
 
+  /// The most codes shown at once in an area of [size]. Fill mode never
+  /// shows fewer.
+  static int maxCodesFor(Size size) {
+    final (columns, rows) = _FlexibleGrid.layout(size, fill: true);
+    return columns * rows;
+  }
+
   const RaptorQrStreamingWidget({
     super.key,
     required this.file,
@@ -372,27 +379,33 @@ class _FlexibleGrid extends StatelessWidget {
   final Widget Function(int index, int totalCount) itemBuilder;
 
   // The gap is also kept around the block.
-  double _side(int columns, int rows) => math.max(
+  static double _side(Size size, int columns, int rows) => math.max(
     0.0,
     math.min(
-      (constraints.maxWidth - (columns + 1) * _spacing) / columns,
-      (constraints.maxHeight - (rows + 1) * _spacing) / rows,
+      (size.width - (columns + 1) * _spacing) / columns,
+      (size.height - (rows + 1) * _spacing) / rows,
     ),
   );
 
-  (int, int) _fillLayout() {
-    final aspectRatio = constraints.maxWidth / constraints.maxHeight;
+  static (int, int) layout(Size size, {required bool fill}) =>
+      fill ? _fillLayout(size) : _fitLayout(size);
+
+  /// 2 rows by aspect ratio, unless the [_fitLayout] shows more, which
+  /// happens in tall windows.
+  static (int, int) _fillLayout(Size size) {
+    final aspectRatio = size.width / size.height;
     final columns = aspectRatio < 0.8 ? 1 : (aspectRatio < 1.4 ? 2 : 3);
-    return (columns, 2);
+    final fit = _fitLayout(size);
+    return fit.$1 * fit.$2 > columns * 2 ? fit : (columns, 2);
   }
 
   /// Most codes that stay at least [_minSide], larger codes on a tie.
-  (int, int) _fitLayout() {
+  static (int, int) _fitLayout(Size size) {
     var best = (1, 1);
-    var bestSide = _side(1, 1);
+    var bestSide = _side(size, 1, 1);
     for (var rows = 1; rows <= 2; rows++) {
       for (var columns = 1; columns <= 3; columns++) {
-        final side = _side(columns, rows);
+        final side = _side(size, columns, rows);
         if (side < _minSide) continue;
         final count = columns * rows;
         final bestCount = best.$1 * best.$2;
@@ -407,8 +420,9 @@ class _FlexibleGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (columns, rows) = fill ? _fillLayout() : _fitLayout();
-    final side = _side(columns, rows);
+    final size = constraints.biggest;
+    final (columns, rows) = layout(size, fill: fill);
+    final side = _side(size, columns, rows);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,

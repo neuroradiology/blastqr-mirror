@@ -357,7 +357,9 @@ class _QrPageState extends State<QrPage> with WindowListener {
       fileSize: size,
       fps: fps,
       mtu: mtu,
-      codesPerFrame: _maxQrCodesPerFrame(),
+      codesPerFrame: RaptorQrStreamingWidget.maxCodesFor(
+        MediaQuery.sizeOf(context),
+      ),
     );
   }
 
@@ -490,9 +492,7 @@ class _QrPageState extends State<QrPage> with WindowListener {
     if (mounted && _fullscreenMode) _exitFullscreen();
   }
 
-  /// A tap toggles fill right away. On desktop, a second tap soon after
-  /// makes it a double tap, which toggles window full screen instead, from
-  /// the state before the first tap. GestureDetector's onDoubleTap would
+  /// Not using GestureDetector onDoubleTap because it would
   /// delay every single tap.
   void _onTapCodes() {
     final now = DateTime.now();
@@ -535,22 +535,6 @@ class _QrPageState extends State<QrPage> with WindowListener {
     _dismissed = true;
     _cleanup();
     Navigator.of(context).pop();
-  }
-
-  /// Mirrors the column logic in [_FlexibleGrid]: 2 rows × 1–3 columns based
-  /// on the current screen aspect ratio.
-  int _maxQrCodesPerFrame() {
-    final size = MediaQuery.of(context).size;
-    final aspectRatio = size.width / size.height;
-    final int columns;
-    if (aspectRatio < 0.8) {
-      columns = 1;
-    } else if (aspectRatio < 1.4) {
-      columns = 2;
-    } else {
-      columns = 3;
-    }
-    return 2 * columns;
   }
 
   void _cleanup() {
