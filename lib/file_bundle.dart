@@ -49,13 +49,17 @@ class BundleFormatException implements Exception {
 /// the new files. Entry names are untrusted: only the cleaned last path
 /// segment is used, made unique in [directory].
 ///
-/// Only stored (uncompressed) entries are accepted, so the output can't be
-/// larger than the zip. On any error, files written so far are deleted.
+/// Only stored (uncompressed) entries are accepted, and the output may not be
+/// larger than the zip: entries can point at the same data, so a small zip
+/// could otherwise expand to fill the disk. On any error, files written so
+/// far are deleted.
 Future<List<String>> extractBundle(String zipPath, Directory directory) {
   final dirPath = directory.path;
   return Isolate.run(() {
     final input = InputFileStream(zipPath);
+    final maxBytes = input.length;
     final written = <String>[];
+    var writtenBytes = 0;
     try {
       final Archive archive;
       try {
@@ -70,6 +74,9 @@ Future<List<String>> extractBundle(String zipPath, Directory directory) {
       if (files.any((f) => f.compression != CompressionType.none)) {
         throw const BundleFormatException('Compressed entries');
       }
+      if (files.fold<int>(0, (sum, f) => sum + f.size) > maxBytes) {
+        throw const BundleFormatException('Larger than the zip');
+      }
       for (final file in files) {
         final name = uniqueFileName(
           sanitizeFileName(file.name),
@@ -80,8 +87,13 @@ Future<List<String>> extractBundle(String zipPath, Directory directory) {
         final output = OutputFileStream(path);
         try {
           file.writeContent(output);
+          writtenBytes += output.length;
         } finally {
           output.closeSync();
+        }
+        // The sizes in the zip's directory may not match the data.
+        if (writtenBytes > maxBytes) {
+          throw const BundleFormatException('Larger than the zip');
         }
       }
       return written;
