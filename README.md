@@ -13,7 +13,6 @@
 <b><a href="https://codeberg.org/cukha/blastqr/releases/latest">macOS, Windows, Linux and command-line downloads</a></b>
 </p>
 
-
 <h3 align="center">See blastQR in action</h3>
 <div align="center">
 <details>
@@ -24,11 +23,11 @@
 
 ## Introduction
 
-blastQR is an open-source file transfer app and protocol that works completely offline. Data is transferred through sequences of QR codes displayed on a sender device and scanned by a receiver device's camera. It uses [RaptorQ](https://github.com/cberner/raptorq) codes so the receiver can recover the file from any sufficiently large subset of frames.
+blastQR is a fully open-source file transfer app and protocol that works completely offline. Data is transferred through sequences of QR codes displayed on a sender device and scanned by a receiver device's camera. It uses [RaptorQ](https://github.com/cberner/raptorq) codes so the receiver can recover the file from any sufficiently large subset of frames.
 
-When using compression and displaying multiple codes, it's fast enough for simple everyday picture and file transfers. It's also especially useful for air-gapped systems (computers that are completely cut off from any network). Transfers can optionally be encrypted with a password to prevent interception.
+It's fast enough for everyday picture and file transfers when using compression and multiple QR codes. During **internet outages or digital blackouts**, files can be broadcast on a large screen for multiple devices to receive. Transfers can optionally be password-encrypted.
 
-The protocol is an open spec so that other software can freely add support for sending and receiving blastQR transfers.
+The protocol is an open specification so that other software can freely implement support for sending and receiving blastQR transfers.
 
 Written in Flutter and Rust and currently available for Linux, Android, iOS, macOS and Windows.
 
@@ -43,19 +42,25 @@ Downloads for all platforms are on the **[latest release page](https://codeberg.
 
 ## Features
 
-<!-- TODO: video -->
-
-- **Works fully offline:** No internet, Wi-Fi, Bluetooth or servers. The only link between devices is the screen and the camera. Your data stays offline.
-- **Runs everywhere:** Android, iOS, macOS, Linux and Windows, plus a command-line tool that can send from a terminal, even over SSH.
+- **Works fully offline:** No internet, Wi-Fi, Bluetooth or servers. Your data stays offline.
+- **One-to-many distribution:** Share the same file with multiple devices simultaneously using a single blastQR broadcast.
+- **Cross-platform:** Android, iOS, macOS, Linux and Windows, plus a command-line tool that can send from a terminal, even over SSH.
 - **Multiple codes on screen:** Shows multiple QR codes at once for higher speed. With 8 codes at 60 fps, transfers peak at around 1.4 MB/s.
 - **Send multiple files in one go:** They're zipped into one transfer and unpacked into separate files on the receiver.
 - **Sound feedback:** The receiver plays a short tone when it has the whole file, and the sender stops automatically when it hears it.
 - **Password encryption:** You can optionally encrypt files with an auto-generated password or a custom one.
-- **File compression:** The app supports lossy and lossless compression of images and files (gzip) for quicker transfers.
-- **No need to catch every code:** Start scanning at any point and keep the camera on the screen until it's done. Blurry or missed codes don't matter.
+- **File compression:** The app supports lossy image compression and lossless compression for files (gzip) for quicker transfers.
+- **Start scanning at any point:**  No need to catch every code, just keep the camera on the screen until it's done. Blurry or missed codes don't matter.
 - **Regular QR scanner:** You can also scan normal QR codes and save them.
+- **Built-in file manager**
 
 *Windows can only send transfers for now, because the app has no camera support there.
+
+## Use cases
+- **Internet outages and digital blackouts:** Broadcast on a large screen so multiple devices can receive data without requiring an internet connection.
+- **Regular file transfers:** As long as the files are not too big. Things that work well: small number of pictures, configuration files, simple git repositories, ROM files, etc.
+- **Sensitive information:** Transfer files without relying on cloud services or network infrastructure. Always enable password encryption for sensitive data, and ensure that the devices involved are not compromised.
+- **Air-gapped systems**: Transfer files between devices without connecting them to a network.
 
 ## Real-world benchmarks
 
