@@ -15,6 +15,10 @@ const MIN_MODULE_PX: usize = 3;
 /// Lines kept free below the codes for the status line.
 const STATUS_LINES: usize = 1;
 
+/// Shown in text mode, on its own line if there's room below the codes.
+const TEXT_WARNING: &str = "\x1b[33mWarning: Running in text mode. Use a terminal that \
+    can show images for full speed.";
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Backend {
     /// Half blocks: 1×2 modules per cell.
@@ -251,6 +255,10 @@ impl Renderer {
         self.codes
     }
 
+    pub fn is_text(&self) -> bool {
+        self.backend.is_text()
+    }
+
     /// Escape codes that draw one frame plus the status line. Wrapped in
     /// synchronized output so half-drawn codes are never shown.
     pub fn frame(&self, codes: &[Matrix], status: &str) -> Vec<u8> {
@@ -272,11 +280,27 @@ impl Renderer {
                 }
             }
         }
+        let mut status = status.to_string();
+        if self.backend.is_text() {
+            let free_line = self
+                .placement
+                .is_some_and(|p| p.row + p.cells.1 < self.rows - STATUS_LINES);
+            if free_line {
+                let _ = write!(
+                    out,
+                    "\x1b[{};1H\x1b[2K{}\x1b[0m",
+                    self.rows - 1,
+                    truncate(TEXT_WARNING, self.cols)
+                );
+            } else {
+                status = format!("{TEXT_WARNING}\x1b[0m · {status}");
+            }
+        }
         let _ = write!(
             out,
-            "\x1b[{};1H\x1b[2K{}",
+            "\x1b[{};1H\x1b[2K{}\x1b[0m",
             self.rows,
-            truncate(status, self.cols)
+            truncate(&status, self.cols)
         );
         out.push_str("\x1b[?2026l");
         out.into_bytes()
@@ -391,8 +415,27 @@ fn png(canvas: &Canvas, module_px: usize) -> Vec<u8> {
     png
 }
 
+/// The first `max` visible characters of `s`. Escape sequences such as
+/// colors are kept and don't count.
 fn truncate(s: &str, max: usize) -> String {
-    s.chars().take(max).collect()
+    let mut out = String::new();
+    let mut visible = 0;
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '\x1b' {
+            out.push(c);
+            for c in chars.by_ref() {
+                out.push(c);
+                if c.is_ascii_alphabetic() {
+                    break;
+                }
+            }
+        } else if visible < max {
+            out.push(c);
+            visible += 1;
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -476,6 +519,15 @@ mod tests {
     }
 
     #[test]
+    fn truncate_skips_colors() {
+        assert_eq!(
+            truncate("\x1b[33mwarn\x1b[39m ok", 6),
+            "\x1b[33mwarn\x1b[39m o"
+        );
+        assert_eq!(truncate("abc", 2), "ab");
+    }
+
+    #[test]
     fn png_scans() {
         let (data, matrices) = codes(2, 4);
         let p = place(Backend::Kitty, 4, 2, term(200, 60)).unwrap();
@@ -533,7 +585,8 @@ mod tests {
                 }
                 continue;
             }
-            if row < t.rows - STATUS_LINES {
+            // The last two lines are the warning and the status.
+            if row < t.rows - STATUS_LINES - 1 {
                 // Lit quarters: 1 top left, 2 top right, 4 bottom left, 8 bottom right.
                 let glyph = match c {
                     ' ' => 0,
@@ -572,8 +625,9 @@ mod tests {
         let out = String::from_utf8(r.frame(&matrices, "status")).unwrap();
         let (w, h, light) = replay(&out, t);
         // Off-canvas cells were never drawn: treat as light.
-        let found = scan_all(w, h, |x, y| light[y * w + x] || y >= (t.rows - 1) * 4);
+        let found = scan_all(w, h, |x, y| light[y * w + x] || y >= (t.rows - 2) * 4);
         assert_eq!(found, data);
         assert!(!out.contains('▀'));
+        assert!(out.contains(TEXT_WARNING));
     }
 }

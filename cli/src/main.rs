@@ -456,7 +456,14 @@ fn play(
         if redraw {
             out.write_all(&renderer.frame(
                 &current,
-                &status(info, shown, fps, measured, hide_password_at.is_some()),
+                &status(
+                    info,
+                    shown,
+                    fps,
+                    measured,
+                    renderer.is_text(),
+                    hide_password_at.is_some(),
+                ),
             ))?;
             out.flush()?;
             redraw = false;
@@ -522,6 +529,7 @@ fn status(
     shown: u64,
     fps: u32,
     measured: Option<u32>,
+    text: bool,
     show_password: bool,
 ) -> String {
     let mut parts = vec![];
@@ -537,16 +545,18 @@ fn status(
     }
     parts.push(format!("{} ({})", info.name, human_size(info.size)));
     parts.push(format!("code {shown} / ~{}", info.source_count));
+    // Text terminals can read frames faster than they redraw (Terminal.app
+    // shows about 15 per second), so a measured rate would overstate it.
     match measured {
-        Some(real) => parts.push(format!("{fps} fps (real {real})")),
-        None => parts.push(format!("{fps} fps")),
+        Some(real) if !text => parts.push(format!("{fps} fps (real {real})")),
+        _ => parts.push(format!("{fps} fps")),
     }
     if info.code.is_some() {
         parts.push("↑↓ speed · space password · q quit".into());
     } else {
         parts.push("↑↓ speed · q quit".into());
     }
-    format!(" {}", parts.join(" · "))
+    parts.join(" · ")
 }
 
 /// Asks a yes/no question on the terminal, even if stdin is a pipe. Without
