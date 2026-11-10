@@ -15,19 +15,10 @@ const MIN_MODULE_PX: usize = 3;
 /// Lines kept free below the codes for the status line.
 const STATUS_LINES: usize = 1;
 
-/// Quadrant block characters, indexed by which quarters are lit:
-/// 1 top left, 2 top right, 4 bottom left, 8 bottom right.
-const QUADRANTS: [char; 16] = [
-    ' ', '▘', '▝', '▀', '▖', '▌', '▞', '▛', '▗', '▚', '▐', '▜', '▄', '▙', '▟', '█',
-];
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Backend {
     /// Half blocks: 1×2 modules per cell.
     Half,
-    /// Quadrant blocks: 2×2 modules per cell. Modules come out twice as tall
-    /// as wide, which decoders handle like any other viewing angle.
-    Quadrant,
     Kitty,
     Iterm,
 }
@@ -52,21 +43,13 @@ impl Backend {
     }
 
     pub fn is_text(self) -> bool {
-        matches!(self, Backend::Half | Backend::Quadrant)
+        self == Backend::Half
     }
 
     /// Quiet zone around each code, in modules. Two is less than the spec's
     /// four but decoders handle it, and terminal space is tight.
     fn quiet(self) -> usize {
         if self.is_text() { 2 } else { 4 }
-    }
-
-    /// Modules per character cell, across and down (text backends).
-    fn cell_modules(self) -> (usize, usize) {
-        match self {
-            Backend::Quadrant => (2, 2),
-            _ => (1, 2),
-        }
     }
 
     /// One code plus its quiet zone, in modules per side.
@@ -112,7 +95,7 @@ struct Placement {
     row: usize,
     /// Codes across and down.
     grid: (usize, usize),
-    /// Pixels per module on screen, rounded up (image backends only).
+    /// Pixels per module on screen, rounded down (image backends only).
     module_px: usize,
     /// Cells covered, across and down.
     cells: (usize, usize),
@@ -126,10 +109,9 @@ fn place(backend: Backend, version: u8, count: usize, term: TermSize) -> Option<
         .rev()
         .map(|across| (across, count.div_ceil(across)));
     if backend.is_text() {
-        let (cw, ch) = backend.cell_modules();
         grids.into_iter().find_map(|grid| {
-            let cols = (grid.0 * tile).div_ceil(cw);
-            let rows = (grid.1 * tile).div_ceil(ch);
+            let cols = grid.0 * tile;
+            let rows = (grid.1 * tile).div_ceil(2);
             (cols <= term.cols && rows <= term.code_rows()).then(|| Placement {
                 col: (term.cols - cols) / 2,
                 row: (term.code_rows() - rows) / 2,
@@ -172,7 +154,7 @@ fn place(backend: Backend, version: u8, count: usize, term: TermSize) -> Option<
             col: term.cols.saturating_sub(cols) / 2,
             row: term.code_rows().saturating_sub(rows) / 2,
             grid,
-            module_px: px.ceil() as usize,
+            module_px: px as usize,
             cells: (cols, rows),
         })
     }
@@ -188,8 +170,7 @@ pub fn largest_version(backend: Backend, count: usize, term: TermSize) -> Option
 /// Terminal size, in cells, needed for one code of `version` (text backends).
 pub fn needed_cells(backend: Backend, version: u8) -> (usize, usize) {
     let tile = backend.tile(version);
-    let (cw, ch) = backend.cell_modules();
-    (tile.div_ceil(cw), tile.div_ceil(ch) + STATUS_LINES)
+    (tile, tile.div_ceil(2) + STATUS_LINES)
 }
 
 /// All codes of a frame laid out in a grid, quiet zones included.
@@ -285,7 +266,7 @@ impl Renderer {
             Some(p) => {
                 let canvas = Canvas::new(codes, p.grid, self.backend.quiet());
                 match self.backend {
-                    Backend::Half | Backend::Quadrant => self.text(&mut out, &canvas, p),
+                    Backend::Half => self.text(&mut out, &canvas, p),
                     Backend::Kitty => kitty(&mut out, &canvas, p),
                     Backend::Iterm => iterm(&mut out, &canvas, p),
                 }
@@ -310,8 +291,6 @@ impl Renderer {
     }
 
     fn text(&self, out: &mut String, canvas: &Canvas, p: Placement) {
-        let (cw, ch) = self.backend.cell_modules();
-        let dark = |y, x| canvas.is_dark(y, x);
         // Fixed palette entries 16 (black) and 231 (white), not the theme's
         // colors, which might be inverted or tinted. Terminal.app has no
         // 24-bit color, but every terminal has these.
@@ -323,21 +302,18 @@ impl Renderer {
         // font and may not: in Terminal.app the glyph box is shorter than the
         // line and sits at its bottom, so ▀ is drawn too low while ▄ is about
         // right. So the top of each cell is always background, and only the
-        // bottom half (or quarters) is ever drawn as a glyph.
+        // bottom half is ever drawn as a glyph.
         out.push_str("\x1b[38;5;16;48;5;231m");
         let mut bg_black = None;
-        for line in 0..canvas.height.div_ceil(ch) {
+        for line in 0..canvas.height.div_ceil(2) {
             let _ = write!(out, "\x1b[{};{}H", p.row + line + 1, p.col + 1);
-            let (y0, y1) = (line * ch, line * ch + 1);
-            for cell in 0..canvas.width.div_ceil(cw) {
-                // A half-block cell is one module wide: both sides are the same.
-                let (x0, x1) = (cell * cw, cell * cw + cw - 1);
-                let quarters = dark(y0, x0) as usize
-                    | (dark(y0, x1) as usize) << 1
-                    | (dark(y1, x0) as usize) << 2
-                    | (dark(y1, x1) as usize) << 3;
-                let black = quarters & 1 != 0;
-                let glyph = QUADRANTS[if black { !quarters & 15 } else { quarters }];
+            for x in 0..canvas.width {
+                let black = canvas.is_dark(line * 2, x);
+                let glyph = if canvas.is_dark(line * 2 + 1, x) == black {
+                    ' '
+                } else {
+                    '▄'
+                };
                 if bg_black != Some(black) {
                     out.push_str(if black { BG_BLACK } else { BG_WHITE });
                     bg_black = Some(black);
@@ -349,11 +325,12 @@ impl Renderer {
     }
 }
 
-/// Kitty images go out at about half size and the terminal scales them up to
-/// fill `p.cells`, which keeps each frame small to send and decode. Scaling
-/// blurs edges (Ghostty filters linearly), so it's kept to at most 2×.
+/// Kitty images go out at 2 pixels per module and the terminal scales them up
+/// to fill `p.cells`, which keeps each frame small to send and decode. Scaling
+/// filters linearly, softening edges by half a source pixel; 1 pixel per
+/// module looked visibly blurry.
 fn kitty(out: &mut String, canvas: &Canvas, p: Placement) {
-    let png = BASE64.encode(png(canvas, p.module_px.div_ceil(2)));
+    let png = BASE64.encode(png(canvas, 2));
     let _ = write!(out, "\x1b[{};{}H", p.row + 1, p.col + 1);
     // Replace the previous frame: free it, then transmit and place.
     out.push_str("\x1b_Ga=d,d=I,i=1,q=2\x1b\\");
@@ -471,16 +448,6 @@ mod tests {
     }
 
     #[test]
-    fn quadrants_need_half_the_columns() {
-        assert_eq!(needed_cells(Backend::Quadrant, 40), (91, 92));
-        assert_eq!(
-            largest_version(Backend::Quadrant, 1, term(91, 92)),
-            Some(40)
-        );
-        assert_eq!(largest_version(Backend::Quadrant, 1, term(80, 24)), Some(6));
-    }
-
-    #[test]
     fn several_codes_go_side_by_side_first() {
         // Three version-10 tiles (61 modules) across, as half blocks.
         let p = place(Backend::Half, 10, 3, term(183, 32)).unwrap();
@@ -567,7 +534,14 @@ mod tests {
                 continue;
             }
             if row < t.rows - STATUS_LINES {
-                let glyph = QUADRANTS.iter().position(|&q| q == c).unwrap();
+                // Lit quarters: 1 top left, 2 top right, 4 bottom left, 8 bottom right.
+                let glyph = match c {
+                    ' ' => 0,
+                    '▀' => 3,
+                    '▄' => 12,
+                    '█' => 15,
+                    _ => panic!("unexpected glyph {c:?}"),
+                };
                 let (fg_light, bg_light) = if reverse {
                     (bg_light, fg_light)
                 } else {
@@ -590,20 +564,16 @@ mod tests {
     }
 
     #[test]
-    fn text_backends_scan() {
-        for backend in [Backend::Half, Backend::Quadrant] {
-            let t = term(140, 40);
-            let (data, matrices) = codes(3, 3);
-            let r = Renderer::new(backend, 3, 3, t);
-            assert_eq!(r.codes(), 3);
-            let out = String::from_utf8(r.frame(&matrices, "status")).unwrap();
-            let (w, h, light) = replay(&out, t);
-            // Off-canvas cells were never drawn: treat as light.
-            let found = scan_all(w, h, |x, y| light[y * w + x] || y >= (t.rows - 1) * 4);
-            assert_eq!(found, data, "{backend:?}");
-            if backend == Backend::Half {
-                assert!(!out.contains('▀'));
-            }
-        }
+    fn half_blocks_scan() {
+        let t = term(140, 40);
+        let (data, matrices) = codes(3, 3);
+        let r = Renderer::new(Backend::Half, 3, 3, t);
+        assert_eq!(r.codes(), 3);
+        let out = String::from_utf8(r.frame(&matrices, "status")).unwrap();
+        let (w, h, light) = replay(&out, t);
+        // Off-canvas cells were never drawn: treat as light.
+        let found = scan_all(w, h, |x, y| light[y * w + x] || y >= (t.rows - 1) * 4);
+        assert_eq!(found, data);
+        assert!(!out.contains('▀'));
     }
 }

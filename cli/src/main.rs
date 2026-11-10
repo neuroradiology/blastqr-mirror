@@ -31,11 +31,6 @@ struct Args {
     #[arg(short, long)]
     unicode: bool,
 
-    /// Draw with Unicode quadrant blocks: 2×2 modules per character, so codes
-    /// need half the columns. Modules come out tall and narrow.
-    #[arg(short, long)]
-    dense: bool,
-
     /// Show up to this many codes per frame, side by side, each carrying
     /// different data. Without --mtu, codes are sized so this many fit.
     #[arg(short, long, default_value_t = 1, value_parser = clap::value_parser!(u32).range(1..=12))]
@@ -85,9 +80,7 @@ fn main() -> ExitCode {
 
 fn run(args: Args) -> Result<(), String> {
     let term = TermSize::query().map_err(|e| format!("not a terminal: {e}"))?;
-    let backend = if args.dense {
-        Backend::Quadrant
-    } else if args.unicode || !term.has_pixels() {
+    let backend = if args.unicode || !term.has_pixels() {
         Backend::Half
     } else {
         Backend::detect()
