@@ -58,7 +58,7 @@ public class BlastqrVideoPlugin: NSObject, FlutterPlugin {
         output: URL(fileURLWithPath: output),
         settings: EncodeSettings(
           videoBitrate: videoBitrate, audioBitrate: audioBitrate, shortSide: shortSide,
-          frameRate: frameRate))
+          frameRate: frameRate, audioChannels: args["audioChannels"] as? Int ?? 2))
       jobs[id] = job
       job.start(
         progress: { [weak self] progress in
@@ -93,6 +93,7 @@ struct EncodeSettings {
   let audioBitrate: Int
   let shortSide: Int
   let frameRate: Int
+  let audioChannels: Int
 }
 
 enum CompressionError: LocalizedError {
@@ -238,13 +239,13 @@ final class VideoCompression {
         outputSettings: [
           AVFormatIDKey: kAudioFormatLinearPCM,
           AVSampleRateKey: 44_100,
-          AVNumberOfChannelsKey: 2,
+          AVNumberOfChannelsKey: settings.audioChannels,
         ])
       audioOutput.alwaysCopiesSampleData = false
       var audioSettings: [String: Any] = [
         AVFormatIDKey: kAudioFormatMPEG4AAC,
         AVSampleRateKey: 44_100,
-        AVNumberOfChannelsKey: 2,
+        AVNumberOfChannelsKey: settings.audioChannels,
         AVEncoderBitRateKey: settings.audioBitrate,
       ]
       // Leave the bitrate to the encoder if it doesn't support this one.
@@ -351,6 +352,9 @@ final class VideoCompression {
       composition = AVMutableVideoComposition(asset: asset, applyingCIFiltersWithHandler: handler)
     }
     composition.renderSize = renderSize
+    // Frames otherwise follow the source track's timing, ignoring the
+    // frame duration, so higher frame rates aren't dropped.
+    composition.sourceTrackIDForFrameTiming = kCMPersistentTrackID_Invalid
     composition.frameDuration = CMTime(value: 1, timescale: CMTimeScale(frameRate.rounded()))
     composition.colorPrimaries = AVVideoColorPrimaries_ITU_R_709_2
     composition.colorTransferFunction = AVVideoTransferFunction_ITU_R_709_2

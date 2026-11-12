@@ -354,10 +354,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get multi_qr_mode_subtitle => '화면에 들어가는 만큼 코드를 표시해 속도를 높입니다';
 
   @override
-  String get compress_photos_by_default => '기본으로 미디어 압축';
+  String get compress_media_by_default => '기본으로 미디어 압축';
 
   @override
-  String get compress_photos_by_default_subtitle =>
+  String get compress_media_by_default_subtitle =>
       '더 작은 파일로 더 빠르게 보내지만 화질은 낮아집니다';
 
   @override
@@ -702,7 +702,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get preparing_file => '전송 준비 중…';
+  String get preparing_transfer => '전송 준비 중…';
 
   @override
   String get send_files_title => '파일 보내기';
@@ -724,6 +724,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get video_quality_lowest => '최저 (360p)';
+
+  @override
+  String get video_quality_potato => '감자 (240p)';
 
   @override
   String send_time_seconds(int seconds) {

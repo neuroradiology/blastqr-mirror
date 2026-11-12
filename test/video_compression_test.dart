@@ -104,6 +104,20 @@ void main() {
       expect(settings.shortSide, 360);
     });
 
+    test('potato goes to 240p at 15 fps with mono audio', () {
+      final settings = _settingsFor(
+        _video(tenSeconds),
+        sourceBytes: 11 * _mb,
+        quality: VideoQuality.potato,
+      )!;
+
+      expect(settings.videoBitrate, 200000);
+      expect(settings.shortSide, 240);
+      expect(settings.frameRate, 15);
+      expect(settings.audioBitrate, 32000);
+      expect(settings.audioChannels, 1);
+    });
+
     test('original sends videos as they are', () {
       expect(
         _settingsFor(

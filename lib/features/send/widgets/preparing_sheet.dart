@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:blast_qr/color_scheme.dart';
+import 'package:blast_qr/features/send/rough_time.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/widgets/bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +32,7 @@ Future<T?> runWithPreparingSheet<T>(
     sheetOpen = true;
     showSheet<void>(
       context: context,
-      title: context.l10n.preparing_file,
+      title: context.l10n.preparing_transfer,
       body: Builder(
         builder: (context) {
           sheetContext = context;
@@ -58,7 +58,13 @@ Future<T?> runWithPreparingSheet<T>(
     done = true;
     timer.cancel();
     final sheet = sheetContext;
-    if (sheetOpen && sheet != null && sheet.mounted) Navigator.of(sheet).pop();
+    // Only while it's on top: popping otherwise closes the page below.
+    if (sheetOpen &&
+        sheet != null &&
+        sheet.mounted &&
+        (ModalRoute.of(sheet)?.isCurrent ?? false)) {
+      Navigator.of(sheet).pop();
+    }
   }
 }
 
@@ -90,12 +96,11 @@ class _PreparingBodyState extends State<_PreparingBody> {
     if (elapsed < _minElapsed || progress < _minProgress) {
       return '${(progress * 100).floor()}%';
     }
-    final seconds = (elapsed * ((1 - progress) / progress)).inSeconds;
-    if (seconds < 60) {
-      // Rounded up to 5 s, so the label doesn't change every update.
-      return context.l10n.time_left_seconds(max(5, (seconds + 4) ~/ 5 * 5));
-    }
-    return context.l10n.time_left_minutes((seconds / 60).ceil());
+    return roughTime(
+      (elapsed * ((1 - progress) / progress)).inSeconds,
+      inSeconds: context.l10n.time_left_seconds,
+      inMinutes: context.l10n.time_left_minutes,
+    );
   }
 
   @override

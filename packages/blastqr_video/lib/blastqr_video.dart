@@ -32,13 +32,17 @@ class VideoEncodeSettings {
     required this.audioBitrate,
     required this.shortSide,
     required this.frameRate,
+    this.audioChannels = 2,
   });
 
   /// Bits per second.
   final int videoBitrate;
 
-  /// Bits per second, for stereo audio.
+  /// Bits per second.
   final int audioBitrate;
+
+  /// 1 mixes the audio down to mono, which needs half the bitrate.
+  final int audioChannels;
 
   /// The output's shorter side in pixels. The aspect ratio is kept.
   final int shortSide;
@@ -51,12 +55,13 @@ class VideoEncodeSettings {
     'audioBitrate': audioBitrate,
     'shortSide': shortSide,
     'frameRate': frameRate,
+    'audioChannels': audioChannels,
   };
 
   @override
   String toString() =>
       '${shortSide}p ${frameRate}fps, video ${videoBitrate ~/ 1000} kbps, '
-      'audio ${audioBitrate ~/ 1000} kbps';
+      'audio ${audioBitrate ~/ 1000} kbps${audioChannels == 1 ? ' mono' : ''}';
 }
 
 class VideoCompressionCancelled implements Exception {

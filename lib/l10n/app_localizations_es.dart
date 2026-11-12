@@ -365,10 +365,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Muestra tantos códigos como quepan en pantalla para ir más rápido';
 
   @override
-  String get compress_photos_by_default => 'Comprimir multimedia por defecto';
+  String get compress_media_by_default => 'Comprimir multimedia por defecto';
 
   @override
-  String get compress_photos_by_default_subtitle =>
+  String get compress_media_by_default_subtitle =>
       'Archivos más pequeños que se envían más rápido, con menos calidad';
 
   @override
@@ -723,7 +723,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get preparing_file => 'Preparando la transferencia…';
+  String get preparing_transfer => 'Preparando la transferencia…';
 
   @override
   String get send_files_title => 'Enviar archivos';
@@ -746,6 +746,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get video_quality_lowest => 'Mínima (360p)';
+
+  @override
+  String get video_quality_potato => 'Patata (240p)';
 
   @override
   String send_time_seconds(int seconds) {

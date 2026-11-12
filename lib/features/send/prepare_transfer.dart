@@ -1,15 +1,20 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:blast_qr/app_preferences.dart';
-import 'package:blast_qr/features/send/helpers/file_qr_encoder.dart';
+import 'package:blast_qr/crypto/transfer_crypto.dart';
 import 'package:blast_qr/features/send/helpers/video_compression.dart';
-import 'package:blast_qr/features/send/send_files.dart';
 import 'package:blast_qr/features/send/send_options.dart';
+import 'package:blast_qr/file_bundle.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
+import 'package:blast_qr/model/transfer_container.dart';
 import 'package:blast_qr/model/video_quality.dart';
+import 'package:blast_qr/temp_files.dart';
 import 'package:blastqr_video/blastqr_video.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
 /// Sends larger than this get a warning first.
@@ -157,31 +162,6 @@ Future<PreparedTransfer> prepareTransfer(
 
 typedef _Content = ({String name, Uint8List bytes, bool tryGzip});
 
-Future<_Content> _bundle(
-  List<FileWrapper> files, {
-  required bool compress,
-  required ImageCompressionSettings imageSettings,
-  void Function(double progress)? onProgress,
-  Future<void>? cancel,
-}) async {
-  final bundle = await createSendBundle(
-    files,
-    icSettings: compress ? imageSettings : null,
-    compressVideos: compress,
-    onProgress: onProgress,
-    cancel: cancel,
-  );
-  try {
-    return (
-      name: bundle.name,
-      bytes: await bundle.file.readAsBytes(),
-      tryGzip: true,
-    );
-  } finally {
-    await bundle.file.delete();
-  }
-}
-
 /// A re-encoded file takes its new format's extension, also when
 /// [renamed].
 Future<_Content> _singleFile(
@@ -211,7 +191,7 @@ Future<_Content> _singleFile(
   }
   final bytes = await file.file.readAsBytes();
   if (compress && isCompressibleImage(file)) {
-    final image = await FileQrEncoder.compressImage(bytes, imageSettings);
+    final image = await _compressImage(bytes, imageSettings);
     if (image != null) {
       return (
         name: reencodedName(
@@ -227,4 +207,141 @@ Future<_Content> _singleFile(
     bytes: bytes,
     tryGzip: !file.type.isPrecompressed,
   );
+}
+
+/// Builds the transfer object (see [TransferContainer]): the metadata block
+/// with [fileName], then [content], gzipped as a whole if [tryGzip] and only
+/// if that makes it smaller, then encrypted if a [password] is given.
+/// Returns whether gzip was kept.
+Future<({Uint8List bytes, bool gzipped})> buildTransferObject({
+  required String fileName,
+  required Uint8List content,
+  required bool tryGzip,
+  String? password,
+  bool isBundle = false,
+}) async {
+  final metadata = TransferContainer.encodeMetadata(
+    fileName: fileName,
+    isBundle: isBundle,
+  );
+  var bytes = Uint8List(metadata.length + content.length)
+    ..setAll(0, metadata)
+    ..setAll(metadata.length, content);
+
+  var gzipped = false;
+  if (tryGzip) {
+    final compressed = await compute(_gzipCompress, bytes);
+    // Only keep gzip when it helps. This also keeps files near the size
+    // limit from growing past what the u32 header can describe.
+    if (compressed.length < bytes.length) {
+      bytes = compressed;
+      gzipped = true;
+    }
+  }
+  // Encrypt last: compressed ciphertext wouldn't shrink, and the filename
+  // in the metadata ends up encrypted too.
+  if (password != null) {
+    bytes = await TransferCrypto.encrypt(bytes, password);
+  }
+  return (bytes: bytes, gzipped: gzipped);
+}
+
+Uint8List _gzipCompress(Uint8List original) {
+  return gzip.encode(original) as Uint8List;
+}
+
+/// Zips [files], compressing photos and videos first if [compress], as for
+/// a single file. Video compression is reported to [onProgress] from 0 to 1
+/// for all videos together.
+Future<_Content> _bundle(
+  List<FileWrapper> files, {
+  required bool compress,
+  required ImageCompressionSettings imageSettings,
+  void Function(double progress)? onProgress,
+  Future<void>? cancel,
+}) async {
+  final videos = compress
+      ? files.where(isCompressibleVideo).toList()
+      : const <FileWrapper>[];
+  final videoBytes = videos.fold(0, (sum, f) => sum + f.size);
+  var videoBytesDone = 0;
+  final entries = <BundleEntry>[];
+  for (final file in files) {
+    if (compress && isCompressibleImage(file)) {
+      final bytes = await _compressImage(
+        await file.file.readAsBytes(),
+        imageSettings,
+      );
+      if (bytes != null) {
+        final extension =
+            imageSettings.outputFormat.extension ?? file.type.extension;
+        entries.add((
+          name: '${file.nameWithoutExtension}.$extension',
+          path: null,
+          bytes: bytes,
+        ));
+        continue;
+      }
+    }
+    if (videos.contains(file)) {
+      final done = videoBytesDone;
+      final compressed = await compressVideo(
+        file,
+        onProgress: onProgress == null
+            ? null
+            : (p) => onProgress((done + p * file.size) / videoBytes),
+        cancel: cancel,
+      );
+      videoBytesDone += file.size;
+      if (compressed != null) {
+        entries.add((
+          name: compressed.name,
+          path: compressed.file.path,
+          bytes: null,
+        ));
+        continue;
+      }
+    }
+    entries.add((name: file.name, path: file.file.path, bytes: null));
+  }
+
+  final directory = Directory('${(await appTempDirectory()).path}/bundles');
+  await directory.create(recursive: true);
+  final timestamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
+  final zip = File('${directory.path}/blastqr-$timestamp.zip');
+  await writeBundle(entries, zip.path);
+  try {
+    return (
+      name: zip.uri.pathSegments.last,
+      bytes: await zip.readAsBytes(),
+      tryGzip: true,
+    );
+  } finally {
+    await zip.delete();
+  }
+}
+
+/// Re-encodes a photo with [settings]. Null if that fails or isn't smaller.
+Future<Uint8List?> _compressImage(
+  Uint8List bytes,
+  ImageCompressionSettings settings,
+) async {
+  try {
+    final compressed = await FlutterImageCompress.compressWithList(
+      bytes,
+      minHeight: settings.minSize,
+      minWidth: settings.minSize,
+      quality: settings.quality,
+      format: settings.outputFormat.toCompressFormat(),
+      keepExif: true,
+    );
+    if (compressed.length >= bytes.length) {
+      debugPrint('Compressed image is not smaller. Sending original');
+      return null;
+    }
+    return compressed;
+  } catch (e) {
+    debugPrint('Image compression failed. Reverting to file compression');
+    return null;
+  }
 }

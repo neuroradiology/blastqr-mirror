@@ -1,7 +1,7 @@
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:flutter/material.dart';
 
-class FileTooLargeAlertWidget extends StatefulWidget {
+class FileTooLargeAlertWidget extends StatelessWidget {
   const FileTooLargeAlertWidget({
     super.key,
     required this.transferBytes,
@@ -11,16 +11,10 @@ class FileTooLargeAlertWidget extends StatefulWidget {
   final int transferBytes;
   final VoidCallback onAcknowledge;
 
-  @override
-  State<FileTooLargeAlertWidget> createState() =>
-      _FileTooLargeAlertWidgetState();
-}
-
-class _FileTooLargeAlertWidgetState extends State<FileTooLargeAlertWidget> {
   static const _slowestKBps = 24;
 
   String get _estimateInMinutes =>
-      (widget.transferBytes / 1000 / _slowestKBps / 60).toStringAsFixed(0);
+      (transferBytes / 1000 / _slowestKBps / 60).toStringAsFixed(0);
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +67,7 @@ class _FileTooLargeAlertWidgetState extends State<FileTooLargeAlertWidget> {
         ),
         const SizedBox(height: 8),
         OutlinedButton(
-          onPressed: widget.onAcknowledge,
+          onPressed: onAcknowledge,
           child: Text(context.l10n.send_large_file),
         ),
       ],

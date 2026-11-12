@@ -155,17 +155,17 @@ class _SendSettingsPageState extends State<SendSettingsPage> {
             builder: (context, state, child) {
               return SwitchListTile.adaptive(
                 contentPadding: const EdgeInsetsDirectional.only(start: 16),
-                title: Text(context.l10n.compress_photos_by_default),
+                title: Text(context.l10n.compress_media_by_default),
                 subtitle: Text(
-                  context.l10n.compress_photos_by_default_subtitle,
+                  context.l10n.compress_media_by_default_subtitle,
                 ),
-                value: state.compressPhotosByDefault,
+                value: state.compressMediaByDefault,
                 activeTrackColor: context.color.primary,
                 onChanged: (value) {
                   Provider.of<AppSettings>(
                     context,
                     listen: false,
-                  ).updateCompressPhotosByDefault(value);
+                  ).updateCompressMediaByDefault(value);
                 },
               );
             },

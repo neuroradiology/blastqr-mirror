@@ -16,7 +16,7 @@ class AppPreferences {
   static const smallFileFps = 15;
 
   // Named after the setting's old "always compress images" title.
-  static const _compressPhotosKey = 'alwaysCompressImages';
+  static const _compressMediaKey = 'alwaysCompressImages';
 
   static double get defaultCameraZoom => 1.25;
 
@@ -42,7 +42,7 @@ class AppPreferences {
   static bool? _acousticDetection;
   static bool? _multipleQrCodes;
   static bool? _hasSeenMicPrompt;
-  static bool? _compressPhotosByDefault;
+  static bool? _compressMediaByDefault;
   static VideoQuality? _videoQuality;
   static bool? _showInFilesApp;
 
@@ -69,7 +69,7 @@ class AppPreferences {
   static bool get acousticDetection => _acousticDetection ?? false;
   static bool get multipleQrCodes => _multipleQrCodes ?? false;
   static bool get hasSeenMicPrompt => _hasSeenMicPrompt ?? false;
-  static bool get compressPhotosByDefault => _compressPhotosByDefault ?? true;
+  static bool get compressMediaByDefault => _compressMediaByDefault ?? true;
   static VideoQuality get videoQuality => _videoQuality ?? defaultVideoQuality;
   static bool get showInFilesApp => _showInFilesApp ?? false;
 
@@ -200,10 +200,10 @@ class AppPreferences {
     _hasSeenMicPrompt = value;
   }
 
-  static Future<void> setCompressPhotosByDefault(bool value) async {
+  static Future<void> setCompressMediaByDefault(bool value) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
-    sp.setBool(_compressPhotosKey, value);
-    _compressPhotosByDefault = value;
+    sp.setBool(_compressMediaKey, value);
+    _compressMediaByDefault = value;
   }
 
   static Future<void> setVideoQuality(VideoQuality value) async {
@@ -245,7 +245,7 @@ class AppPreferences {
     _acousticDetection = sp.getBool('acousticDetection') ?? false;
     _multipleQrCodes = sp.getBool('multipleQrCodes') ?? false;
     _hasSeenMicPrompt = sp.getBool('hasSeenMicPrompt') ?? false;
-    _compressPhotosByDefault = sp.getBool(_compressPhotosKey) ?? true;
+    _compressMediaByDefault = sp.getBool(_compressMediaKey) ?? true;
     _videoQuality =
         VideoQuality.values.asNameMap()[sp.getString('videoQuality')] ??
         defaultVideoQuality;

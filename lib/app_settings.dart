@@ -30,7 +30,7 @@ class AppSettings extends ChangeNotifier {
   bool soundFeedback;
   bool acousticDetection;
   bool hasSeenMicPrompt;
-  bool compressPhotosByDefault;
+  bool compressMediaByDefault;
   VideoQuality videoQuality;
   bool showInFilesApp;
 
@@ -51,7 +51,7 @@ class AppSettings extends ChangeNotifier {
       soundFeedback = AppPreferences.soundFeedback,
       acousticDetection = AppPreferences.acousticDetection,
       hasSeenMicPrompt = AppPreferences.hasSeenMicPrompt,
-      compressPhotosByDefault = AppPreferences.compressPhotosByDefault,
+      compressMediaByDefault = AppPreferences.compressMediaByDefault,
       videoQuality = AppPreferences.videoQuality,
       showInFilesApp = AppPreferences.showInFilesApp;
 
@@ -152,9 +152,9 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateCompressPhotosByDefault(bool value) {
-    AppPreferences.setCompressPhotosByDefault(value);
-    compressPhotosByDefault = value;
+  void updateCompressMediaByDefault(bool value) {
+    AppPreferences.setCompressMediaByDefault(value);
+    compressMediaByDefault = value;
     notifyListeners();
   }
 

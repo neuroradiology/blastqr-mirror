@@ -30,7 +30,7 @@ Future<void> showFileOptionsSheet(
   required VoidCallback onDelete,
 }) {
   final hd = ValueNotifier(
-    !Provider.of<AppSettings>(context, listen: false).compressPhotosByDefault,
+    !Provider.of<AppSettings>(context, listen: false).compressMediaByDefault,
   );
   return showSheet(
     context: context,

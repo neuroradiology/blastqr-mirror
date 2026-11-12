@@ -368,10 +368,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'عرض أكبر عدد ممكن من الرموز على الشاشة لزيادة السرعة';
 
   @override
-  String get compress_photos_by_default => 'ضغط الوسائط افتراضيًا';
+  String get compress_media_by_default => 'ضغط الوسائط افتراضيًا';
 
   @override
-  String get compress_photos_by_default_subtitle =>
+  String get compress_media_by_default_subtitle =>
       'ملفات أصغر تُرسل أسرع، بجودة أقل';
 
   @override
@@ -734,7 +734,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get preparing_file => 'جارٍ تجهيز النقل…';
+  String get preparing_transfer => 'جارٍ تجهيز النقل…';
 
   @override
   String get send_files_title => 'إرسال الملفات';
@@ -757,6 +757,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get video_quality_lowest => 'الأدنى (360p)';
+
+  @override
+  String get video_quality_potato => 'بطاطس (240p)';
 
   @override
   String send_time_seconds(int seconds) {

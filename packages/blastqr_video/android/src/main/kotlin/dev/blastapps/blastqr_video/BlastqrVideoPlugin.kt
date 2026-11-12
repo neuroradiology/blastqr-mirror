@@ -8,6 +8,8 @@ import android.os.Looper
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.audio.ChannelMixingAudioProcessor
+import androidx.media3.common.audio.ChannelMixingMatrix
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.FrameDropEffect
 import androidx.media3.effect.Presentation
@@ -112,6 +114,7 @@ class BlastqrVideoPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         val audioBitrate = call.argument<Int>("audioBitrate")!!
         val shortSide = call.argument<Int>("shortSide")!!
         val frameRate = call.argument<Int>("frameRate")!!
+        val audioChannels = call.argument<Int>("audioChannels") ?: 2
         output.delete()
 
         val encoderFactory = DefaultEncoderFactory.Builder(context)
@@ -150,7 +153,7 @@ class BlastqrVideoPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             .build()
 
         val effects = Effects(
-            emptyList(),
+            if (audioChannels == 1) listOf(monoMixer()) else emptyList(),
             listOf(
                 Presentation.createForShortSide(shortSide),
                 FrameDropEffect.createDefaultFrameDropEffect(frameRate.toFloat()),
@@ -166,6 +169,17 @@ class BlastqrVideoPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         jobs[id] = Job(transformer, output, result)
         transformer.start(composition, output.path)
         pollProgress(id, transformer)
+    }
+
+    /** Mixes whatever the input has down to one channel. */
+    private fun monoMixer() = ChannelMixingAudioProcessor().apply {
+        for (inputChannels in 1..8) {
+            runCatching {
+                putChannelMixingMatrix(
+                    ChannelMixingMatrix.createForConstantGain(inputChannels, 1)
+                )
+            }
+        }
     }
 
     private fun pollProgress(id: Int, transformer: Transformer) {

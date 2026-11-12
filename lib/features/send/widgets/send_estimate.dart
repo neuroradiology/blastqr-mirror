@@ -1,8 +1,7 @@
-import 'dart:math';
-
 import 'package:blast_qr/app_settings.dart';
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/features/send/prepare_transfer.dart';
+import 'package:blast_qr/features/send/rough_time.dart';
 import 'package:blast_qr/features/send/widgets/raptorq_qr_streaming_widget.dart';
 import 'package:blast_qr/l10n/extension.dart';
 import 'package:blast_qr/model/file_wrapper.dart';
@@ -42,13 +41,11 @@ class _SendEstimateState extends State<SendEstimate> {
 
   static String _kb(int bytes) => '${(bytes / 1000).toStringAsFixed(0)} KB';
 
-  String _timeLabel(int seconds) {
-    if (seconds < 60) {
-      // Rounded up to 5 s, as it's only an estimate.
-      return context.l10n.send_time_seconds(max(5, (seconds + 4) ~/ 5 * 5));
-    }
-    return context.l10n.send_time_minutes((seconds / 60).ceil());
-  }
+  String _timeLabel(int seconds) => roughTime(
+    seconds,
+    inSeconds: context.l10n.send_time_seconds,
+    inMinutes: context.l10n.send_time_minutes,
+  );
 
   @override
   Widget build(BuildContext context) {

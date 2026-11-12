@@ -10,16 +10,11 @@ import 'package:blastqr_video/blastqr_video.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-export 'package:blastqr_video/blastqr_video.dart'
-    show VideoCompressionCancelled;
-
 /// Long videos are kept to about this size, at a lower resolution if need
 /// be.
 const maxVideoBytes = 10000000;
 
-const _audioBitrate = 64000;
 const _minVideoBitrate = 150000;
-const _maxFrameRate = 30;
 
 /// Never more than this share of the original's bitrate.
 const _maxBitrateShare = 0.7;
@@ -40,7 +35,7 @@ VideoEncodeSettings? encodeSettingsFor(
   final qualityBitrate = quality.videoBitrate;
   if (qualityBitrate == null) return null;
   final seconds = max(info.duration.inMilliseconds / 1000, 1);
-  final audio = info.hasAudio ? _audioBitrate : 0;
+  final audio = info.hasAudio ? quality.audioBitrate : 0;
   final source = sourceBytes * 8 / seconds;
   // About 10% is left for the container and the encoder overshooting.
   final ceiling = maxVideoBytes * 8 * 0.9 / seconds;
@@ -55,9 +50,10 @@ VideoEncodeSettings? encodeSettingsFor(
   final shortSide = _shortSideFor(video);
   final settings = VideoEncodeSettings(
     videoBitrate: video,
-    audioBitrate: _audioBitrate,
+    audioBitrate: quality.audioBitrate,
     shortSide: info.shortSide > 0 ? min(info.shortSide, shortSide) : shortSide,
-    frameRate: _maxFrameRate,
+    frameRate: quality.frameRate,
+    audioChannels: quality.audioChannels,
   );
   if (estimatedVideoBytes(info, settings) > sourceBytes * (1 - _minSaving)) {
     return null;
@@ -122,6 +118,7 @@ Future<FileWrapper?> compressVideo(
 
   final directory = await (await appTempDirectory()).createTemp('video_');
   final output = '${directory.path}/${file.nameWithoutExtension}.mp4';
+  FileWrapper? kept;
   try {
     final info = await BlastqrVideo.probe(file.file.path);
     final settings = encodeSettingsFor(
@@ -131,7 +128,6 @@ Future<FileWrapper?> compressVideo(
     );
     if (settings == null) {
       debugPrint('Not compressing ${file.name}: already small enough');
-      await _delete(directory);
       return null;
     }
     debugPrint('Compressing ${file.name} (${info.duration}): $settings');
@@ -150,15 +146,13 @@ Future<FileWrapper?> compressVideo(
     );
     if (compressed.size < file.size) {
       _remember(key, compressed);
-      return compressed;
+      return kept = compressed;
     }
   } on PlatformException catch (e) {
     debugPrint('Video compression failed, sending the original: $e');
-  } on VideoCompressionCancelled {
-    await _delete(directory);
-    rethrow;
+  } finally {
+    if (kept == null) await _delete(directory);
   }
-  await _delete(directory);
   return null;
 }
 

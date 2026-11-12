@@ -34,7 +34,7 @@ SendOptions encryptedSend({String? fileName, required bool compressMedia}) => (
 
 typedef ChosenSend = ({List<FileWrapper> files, SendOptions options});
 
-/// Shows the send sheet right away, with "Preparing file…" until [files]
+/// Shows the send sheet right away, with "Preparing transfer…" until [files]
 /// arrive, e.g. while a picker copies them. The sheet closes if there are
 /// none, and tells the user if they're too large to send. Returns null if
 /// nothing is to be sent.
@@ -122,12 +122,15 @@ class _SendSheetState extends State<_SendSheet> {
     );
   }
 
-  /// Closes after this frame, as it can happen while building.
+  /// Closes after this frame, as it can happen while building. If the user
+  /// already swiped the sheet away, popping would close the page below it.
   void _close(_SheetResult? result) {
     if (_closing) return;
     _closing = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Navigator.of(context).pop(result);
+      if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
+        Navigator.of(context).pop(result);
+      }
     });
   }
 
@@ -157,7 +160,7 @@ class _SendSheetState extends State<_SendSheet> {
           spacing: 16,
           children: [
             const CircularProgressIndicator.adaptive(),
-            Text(context.l10n.preparing_file, textAlign: TextAlign.center),
+            Text(context.l10n.preparing_transfer, textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -185,7 +188,7 @@ class _SendOptionsBodyState extends State<SendOptionsBody> {
     text: widget.files.first.name,
   );
   late final _hd = ValueNotifier(
-    !Provider.of<AppSettings>(context, listen: false).compressPhotosByDefault,
+    !Provider.of<AppSettings>(context, listen: false).compressMediaByDefault,
   );
   late final _showsHd = widget.files.any(isCompressibleMedia);
 

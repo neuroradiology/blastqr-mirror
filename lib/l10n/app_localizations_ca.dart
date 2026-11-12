@@ -365,10 +365,10 @@ class AppLocalizationsCa extends AppLocalizations {
       'Mostra tants codis com càpiguen a la pantalla per anar més ràpid';
 
   @override
-  String get compress_photos_by_default => 'Comprimir multimèdia per defecte';
+  String get compress_media_by_default => 'Comprimir multimèdia per defecte';
 
   @override
-  String get compress_photos_by_default_subtitle =>
+  String get compress_media_by_default_subtitle =>
       'Fitxers més petits que s\'envien més ràpid, amb menys qualitat';
 
   @override
@@ -723,7 +723,7 @@ class AppLocalizationsCa extends AppLocalizations {
   }
 
   @override
-  String get preparing_file => 'Preparant la transferència…';
+  String get preparing_transfer => 'Preparant la transferència…';
 
   @override
   String get send_files_title => 'Envia fitxers';
@@ -746,6 +746,9 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get video_quality_lowest => 'Mínima (360p)';
+
+  @override
+  String get video_quality_potato => 'Patata (240p)';
 
   @override
   String send_time_seconds(int seconds) {

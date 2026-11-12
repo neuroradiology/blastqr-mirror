@@ -210,7 +210,6 @@ class _QrPageState extends State<QrPage> with WindowListener {
                       onTap: _onTapCodes,
                       onSourceShown: () => _sourceShown = true,
                       onStart: () => _onStart(
-                        _size,
                         multipleQrCodes: state.multipleQrCodes,
                         fps: fps,
                         mtu: mtu,
@@ -315,8 +314,7 @@ class _QrPageState extends State<QrPage> with WindowListener {
     );
   }
 
-  void _onStart(
-    int size, {
+  void _onStart({
     required bool multipleQrCodes,
     required int fps,
     required int mtu,
@@ -324,7 +322,7 @@ class _QrPageState extends State<QrPage> with WindowListener {
     setState(() => _playbackStarted = true);
     if (multipleQrCodes) _enterFullscreen();
     _startAcousticListener(
-      fileSize: size,
+      fileSize: _size,
       fps: fps,
       mtu: mtu,
       codesPerFrame: RaptorQrStreamingWidget.maxCodesFor(

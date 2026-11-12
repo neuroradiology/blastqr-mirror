@@ -101,7 +101,7 @@ mixin ReceivedItemActions<T extends StatefulWidget> on State<T> {
     );
     if (!mounted) return;
     final hd = ValueNotifier(
-      !Provider.of<AppSettings>(context, listen: false).compressPhotosByDefault,
+      !Provider.of<AppSettings>(context, listen: false).compressMediaByDefault,
     );
     final showsHd = files.any(isCompressibleMedia);
     showSheet(

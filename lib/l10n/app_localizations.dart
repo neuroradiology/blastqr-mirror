@@ -764,17 +764,17 @@ abstract class AppLocalizations {
   /// **'Show as many codes as fit on screen for a speed boost'**
   String get multi_qr_mode_subtitle;
 
-  /// No description provided for @compress_photos_by_default.
+  /// No description provided for @compress_media_by_default.
   ///
   /// In en, this message translates to:
   /// **'Compress media by default'**
-  String get compress_photos_by_default;
+  String get compress_media_by_default;
 
-  /// No description provided for @compress_photos_by_default_subtitle.
+  /// No description provided for @compress_media_by_default_subtitle.
   ///
   /// In en, this message translates to:
   /// **'Smaller files that send faster, at lower quality'**
-  String get compress_photos_by_default_subtitle;
+  String get compress_media_by_default_subtitle;
 
   /// No description provided for @hd_tooltip.
   ///
@@ -1346,11 +1346,11 @@ abstract class AppLocalizations {
   /// **'About {minutes} min left'**
   String time_left_minutes(int minutes);
 
-  /// No description provided for @preparing_file.
+  /// No description provided for @preparing_transfer.
   ///
   /// In en, this message translates to:
   /// **'Preparing transfer…'**
-  String get preparing_file;
+  String get preparing_transfer;
 
   /// No description provided for @send_files_title.
   ///
@@ -1393,6 +1393,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lowest (360p)'**
   String get video_quality_lowest;
+
+  /// No description provided for @video_quality_potato.
+  ///
+  /// In en, this message translates to:
+  /// **'Potato (240p)'**
+  String get video_quality_potato;
 
   /// No description provided for @send_time_seconds.
   ///
