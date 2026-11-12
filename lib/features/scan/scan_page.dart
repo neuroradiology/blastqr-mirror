@@ -9,6 +9,7 @@ import 'package:blast_qr/features/scan/decode_stats.dart';
 import 'package:blast_qr/features/scan/received_file_writer.dart';
 import 'package:blast_qr/features/scan/scan_camera.dart';
 import 'package:blast_qr/features/scan/transfer_tracker.dart';
+import 'package:blast_qr/features/scan/widgets/camera_permission_message.dart';
 import 'package:blast_qr/features/scan/widgets/feedback_toggles.dart';
 import 'package:blast_qr/features/scan/widgets/focus_ring.dart';
 import 'package:blast_qr/features/scan/widgets/help_message.dart';
@@ -67,6 +68,7 @@ class _ScanPageState extends State<ScanPage> {
   int _dataLengthInLastPeriod = 0;
   bool _showsReaderWidget = true;
   bool _cameraLoaded = false;
+  bool _cameraDenied = false;
   bool _showLowSpeedWarning = false;
   DateTime? _lowSpeedStartTime;
   late SoundFeedbackService _soundService;
@@ -211,6 +213,9 @@ class _ScanPageState extends State<ScanPage> {
                           onCodes: _handleMultiscan,
                           onCameraChanged: _onCameraChanged,
                           onFrame: DecodeStats.instance.record,
+                          onPermissionChanged: (denied) {
+                            setState(() => _cameraDenied = denied);
+                          },
                         ),
                       ),
                     )
@@ -227,6 +232,12 @@ class _ScanPageState extends State<ScanPage> {
                       setState(() => _focusIndicator = null);
                     }
                   },
+                ),
+              ),
+            if (_cameraDenied)
+              Positioned.fill(
+                child: CameraPermissionMessage(
+                  onEnable: () => _readerKey.currentState?.enableCamera(),
                 ),
               ),
             // Top gradient
@@ -247,7 +258,7 @@ class _ScanPageState extends State<ScanPage> {
                     child: HelpMessage(message: context.l10n.scan_help_message),
                   ),
                 )
-                .animate(target: _isReceivingData ? 0 : 1)
+                .animate(target: _isReceivingData || _cameraDenied ? 0 : 1)
                 .fade(delay: 1.seconds, begin: -0.5)
                 .moveY(
                   delay: 1.seconds,
