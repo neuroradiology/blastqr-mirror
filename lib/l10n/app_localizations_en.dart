@@ -720,7 +720,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get preparing_transfer => 'Preparing transfer…';
+  String get preparing_transfer => 'Preparing transfer...';
 
   @override
   String get send_files_title => 'Send files';

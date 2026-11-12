@@ -723,7 +723,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get preparing_transfer => 'Preparando la transferencia…';
+  String get preparing_transfer => 'Preparando la transferencia...';
 
   @override
   String get send_files_title => 'Enviar archivos';

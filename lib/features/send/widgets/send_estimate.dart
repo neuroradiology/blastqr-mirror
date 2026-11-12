@@ -69,13 +69,18 @@ class _SendEstimateState extends State<SendEstimate> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              estimate < original
-                  ? '${_kb(original)} → ~${_kb(estimate)}'
-                  : _kb(original),
-              textAlign: TextAlign.center,
-              style: style,
-            ),
+            if (estimate < original)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 4,
+                children: [
+                  Text(_kb(original), style: style),
+                  Icon(Icons.arrow_forward, size: 14, color: style.color),
+                  Text('~${_kb(estimate)}', style: style),
+                ],
+              )
+            else
+              Text(_kb(original), style: style),
             Text(
               _timeLabel((estimate / bytesPerSecond).ceil()),
               textAlign: TextAlign.center,

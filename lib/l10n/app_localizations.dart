@@ -1349,7 +1349,7 @@ abstract class AppLocalizations {
   /// No description provided for @preparing_transfer.
   ///
   /// In en, this message translates to:
-  /// **'Preparing transfer…'**
+  /// **'Preparing transfer...'**
   String get preparing_transfer;
 
   /// No description provided for @send_files_title.

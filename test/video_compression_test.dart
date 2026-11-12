@@ -47,7 +47,7 @@ void main() {
         sourceBytes: _bytesAt(1.2, minute),
       )!;
 
-      // 1.2 Mbps × 0.7, minus 64 kbps of audio.
+      // 1.2 Mbps * 0.7, minus 64 kbps of audio.
       expect(settings.videoBitrate, 776000);
     });
 

@@ -260,7 +260,7 @@
   "@time_left_seconds": {"placeholders": {"seconds": {"type": "int"}}},
   "time_left_minutes": "About {minutes} min left",
   "@time_left_minutes": {"placeholders": {"minutes": {"type": "int"}}},
-  "preparing_transfer": "Preparing transfer…",
+  "preparing_transfer": "Preparing transfer...",
   "send_files_title": "Send files",
   "photos_and_videos_section": "Photos & videos",
   "video_quality": "Video quality",

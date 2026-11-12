@@ -702,7 +702,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get preparing_transfer => '전송 준비 중…';
+  String get preparing_transfer => '전송 준비 중...';
 
   @override
   String get send_files_title => '파일 보내기';

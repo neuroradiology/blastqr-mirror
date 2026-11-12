@@ -209,7 +209,7 @@
   "compressing_videos": "{count, plural, =1{Comprimiendo vídeo} other{Comprimiendo {count} vídeos}}",
   "time_left_seconds": "Quedan unos {seconds} s",
   "time_left_minutes": "Quedan unos {minutes} min",
-  "preparing_transfer": "Preparando la transferencia…",
+  "preparing_transfer": "Preparando la transferencia...",
   "send_files_title": "Enviar archivos",
   "photos_and_videos_section": "Fotos y vídeos",
   "video_quality": "Calidad de vídeo",

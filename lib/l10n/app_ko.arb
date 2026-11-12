@@ -209,7 +209,7 @@
   "compressing_videos": "{count, plural, =1{동영상 압축 중} other{동영상 {count}개 압축 중}}",
   "time_left_seconds": "약 {seconds}초 남음",
   "time_left_minutes": "약 {minutes}분 남음",
-  "preparing_transfer": "전송 준비 중…",
+  "preparing_transfer": "전송 준비 중...",
   "send_files_title": "파일 보내기",
   "photos_and_videos_section": "사진 및 동영상",
   "video_quality": "동영상 화질",

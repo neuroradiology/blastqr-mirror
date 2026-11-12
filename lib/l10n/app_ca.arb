@@ -208,7 +208,7 @@
   "compressing_videos": "{count, plural, =1{Comprimint el vídeo} other{Comprimint {count} vídeos}}",
   "time_left_seconds": "Queden uns {seconds} s",
   "time_left_minutes": "Queden uns {minutes} min",
-  "preparing_transfer": "Preparant la transferència…",
+  "preparing_transfer": "Preparant la transferència...",
   "send_files_title": "Envia fitxers",
   "photos_and_videos_section": "Fotos i vídeos",
   "video_quality": "Qualitat del vídeo",

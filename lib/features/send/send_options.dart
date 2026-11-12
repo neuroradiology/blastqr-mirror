@@ -34,7 +34,7 @@ SendOptions encryptedSend({String? fileName, required bool compressMedia}) => (
 
 typedef ChosenSend = ({List<FileWrapper> files, SendOptions options});
 
-/// Shows the send sheet right away, with "Preparing transfer…" until [files]
+/// Shows the send sheet right away, with "Preparing transfer..." until [files]
 /// arrive, e.g. while a picker copies them. The sheet closes if there are
 /// none, and tells the user if they're too large to send. Returns null if
 /// nothing is to be sent.

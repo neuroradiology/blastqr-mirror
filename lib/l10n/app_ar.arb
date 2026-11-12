@@ -257,7 +257,7 @@
   "compressing_videos": "{count, plural, =1{جارٍ ضغط الفيديو} other{جارٍ ضغط {count} من مقاطع الفيديو}}",
   "time_left_seconds": "يتبقى حوالي {seconds} ثانية",
   "time_left_minutes": "يتبقى حوالي {minutes} دقيقة",
-  "preparing_transfer": "جارٍ تجهيز النقل…",
+  "preparing_transfer": "جارٍ تجهيز النقل...",
   "send_files_title": "إرسال الملفات",
   "photos_and_videos_section": "الصور ومقاطع الفيديو",
   "video_quality": "جودة الفيديو",

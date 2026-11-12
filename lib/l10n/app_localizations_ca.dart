@@ -723,7 +723,7 @@ class AppLocalizationsCa extends AppLocalizations {
   }
 
   @override
-  String get preparing_transfer => 'Preparant la transferència…';
+  String get preparing_transfer => 'Preparant la transferència...';
 
   @override
   String get send_files_title => 'Envia fitxers';

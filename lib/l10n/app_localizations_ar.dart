@@ -734,7 +734,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get preparing_transfer => 'جارٍ تجهيز النقل…';
+  String get preparing_transfer => 'جارٍ تجهيز النقل...';
 
   @override
   String get send_files_title => 'إرسال الملفات';
