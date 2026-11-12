@@ -7,13 +7,11 @@ import 'dart:math';
 import 'package:blast_qr/crypto/transfer_crypto.dart';
 import 'package:blast_qr/features/send/helpers/qr_lookup_table.dart';
 import 'package:blast_qr/model/blast_qrcode_data.dart';
-import 'package:blast_qr/model/file_wrapper.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
 import 'package:blast_qr/model/transfer_container.dart';
 import 'package:blast_qr/raptorq/raptorq_streaming_encoder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path/path.dart' as p;
 import 'package:qr/qr.dart';
 
 /// One rendered QR frame. [seq] is its position in the stream (0, 1, 2, ...).
@@ -237,63 +235,23 @@ Uint8List buildFrameHeader({
 class FileQrEncoder {
   const FileQrEncoder._();
 
-  /// Prepares [file] for sending and starts an endless frame stream.
+  /// Starts an endless frame stream for [transfer], a transfer object from
+  /// [buildTransferObject].
   ///
   /// The caller must [QrFrameSource.dispose] the result.
   static Future<QrFrameSource> start(
-    FileWrapper file,
+    Uint8List transfer,
     int mtu, {
-    ImageCompressionSettings? icSettings,
-    String? password,
-    String? fileName,
-    bool isBundle = false,
-    void Function(int)? onCompressedSize,
+    required bool gzipped,
+    required bool encrypted,
   }) async {
-    var bytes = await file.file.readAsBytes();
-    var gzipped = !file.type.isPrecompressed;
-    var fileExtension = file.type.extension;
-    var reencoded = false;
-
-    // A re-encoded image takes the output format's extension.
-    if (icSettings != null && file.type.allowsImageCompression) {
-      final compressedImage = await compressImage(bytes, icSettings);
-      if (compressedImage != null) {
-        bytes = compressedImage;
-        gzipped = false;
-        fileExtension = icSettings.outputFormat.extension ?? fileExtension;
-        reencoded = true;
-      }
-    }
-
-    // A renamed file keeps the name as typed, except that a re-encoded image
-    // still takes the output format's extension.
-    final sentName = switch (fileName) {
-      null => '${file.nameWithoutExtension}.$fileExtension',
-      _ when reencoded =>
-        '${p.basenameWithoutExtension(fileName)}.$fileExtension',
-      _ => fileName,
-    };
-
-    final transfer = await buildTransferObject(
-      fileName: sentName,
-      content: bytes,
-      tryGzip: gzipped,
-      password: password,
-      isBundle: isBundle,
-    );
-    bytes = transfer.bytes;
-
-    final actualTransferSize = bytes.length;
-    debugPrint('Compressed file: ${file.size} -> $actualTransferSize');
-    onCompressedSize?.call(actualTransferSize);
-
     final encoder = RaptorqStreamingEncoder(mtu: mtu);
-    await encoder.init(bytes);
+    await encoder.init(transfer);
 
     final header = buildFrameHeader(
-      gzipped: transfer.gzipped,
-      encrypted: password != null,
-      transferLength: actualTransferSize,
+      gzipped: gzipped,
+      encrypted: encrypted,
+      transferLength: transfer.length,
       symbolSize: encoder.symbolSize,
     );
     final qrVersion = pickQrVersion(mtu);

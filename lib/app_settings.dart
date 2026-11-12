@@ -3,6 +3,7 @@ import 'dart:math' show min;
 
 import 'package:blast_qr/app_preferences.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
+import 'package:blast_qr/model/video_quality.dart';
 import 'package:blast_qr/received_files_directory.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,7 @@ class AppSettings extends ChangeNotifier {
   bool acousticDetection;
   bool hasSeenMicPrompt;
   bool compressPhotosByDefault;
+  VideoQuality videoQuality;
   bool showInFilesApp;
 
   AppSettings()
@@ -50,6 +52,7 @@ class AppSettings extends ChangeNotifier {
       acousticDetection = AppPreferences.acousticDetection,
       hasSeenMicPrompt = AppPreferences.hasSeenMicPrompt,
       compressPhotosByDefault = AppPreferences.compressPhotosByDefault,
+      videoQuality = AppPreferences.videoQuality,
       showInFilesApp = AppPreferences.showInFilesApp;
 
   void updateLocale(String? localeId) {
@@ -152,6 +155,12 @@ class AppSettings extends ChangeNotifier {
   void updateCompressPhotosByDefault(bool value) {
     AppPreferences.setCompressPhotosByDefault(value);
     compressPhotosByDefault = value;
+    notifyListeners();
+  }
+
+  void updateVideoQuality(VideoQuality value) {
+    AppPreferences.setVideoQuality(value);
+    videoQuality = value;
     notifyListeners();
   }
 

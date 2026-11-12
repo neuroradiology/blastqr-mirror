@@ -1,5 +1,6 @@
 import 'package:blast_qr/color_scheme.dart';
 import 'package:blast_qr/model/image_compression_settings.dart';
+import 'package:blast_qr/model/video_quality.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AppPreferences {
   static int defaultMtu = 2935;
   static int defaultFps = 25;
+  static const defaultVideoQuality = VideoQuality.lowest;
 
   /// Files up to this size are sent with [smallFileMtu] and [smallFileFps].
   static const smallFileBytes = 30000;
@@ -41,6 +43,7 @@ class AppPreferences {
   static bool? _multipleQrCodes;
   static bool? _hasSeenMicPrompt;
   static bool? _compressPhotosByDefault;
+  static VideoQuality? _videoQuality;
   static bool? _showInFilesApp;
 
   static Locale? get locale => _localeId == null ? null : Locale(_localeId!);
@@ -67,6 +70,7 @@ class AppPreferences {
   static bool get multipleQrCodes => _multipleQrCodes ?? false;
   static bool get hasSeenMicPrompt => _hasSeenMicPrompt ?? false;
   static bool get compressPhotosByDefault => _compressPhotosByDefault ?? true;
+  static VideoQuality get videoQuality => _videoQuality ?? defaultVideoQuality;
   static bool get showInFilesApp => _showInFilesApp ?? false;
 
   static Future<void> setLocale(String? localeId) async {
@@ -202,6 +206,12 @@ class AppPreferences {
     _compressPhotosByDefault = value;
   }
 
+  static Future<void> setVideoQuality(VideoQuality value) async {
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    sp.setString('videoQuality', value.name);
+    _videoQuality = value;
+  }
+
   static Future<void> setShowInFilesApp(bool value) async {
     SharedPreferences sp = await SharedPreferences.getInstance();
     sp.setBool('showInFilesApp', value);
@@ -236,6 +246,9 @@ class AppPreferences {
     _multipleQrCodes = sp.getBool('multipleQrCodes') ?? false;
     _hasSeenMicPrompt = sp.getBool('hasSeenMicPrompt') ?? false;
     _compressPhotosByDefault = sp.getBool(_compressPhotosKey) ?? true;
+    _videoQuality =
+        VideoQuality.values.asNameMap()[sp.getString('videoQuality')] ??
+        defaultVideoQuality;
     _showInFilesApp = sp.getBool('showInFilesApp') ?? false;
   }
 }
