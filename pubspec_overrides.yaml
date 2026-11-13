@@ -1,0 +1,3 @@
+dependency_overrides:
+  raptorq_flutter:
+    path: ../raptorq_flutter

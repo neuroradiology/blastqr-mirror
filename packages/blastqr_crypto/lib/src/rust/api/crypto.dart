@@ -21,6 +21,19 @@ Future<Uint8List> encryptTransfer({
   password: password,
 );
 
+/// Like [encrypt_transfer], from the file at `input_path` into a new file at
+/// `output_path`. Neither is held in memory: the output is memory-mapped and
+/// encrypted in place.
+Future<void> encryptTransferFile({
+  required String inputPath,
+  required String outputPath,
+  required String password,
+}) => RustLib.instance.api.crateApiCryptoEncryptTransferFile(
+  inputPath: inputPath,
+  outputPath: outputPath,
+  password: password,
+);
+
 /// Decrypts an envelope made by [encrypt_transfer].
 Future<Uint8List> decryptTransfer({
   required List<int> envelope,

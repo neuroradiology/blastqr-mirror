@@ -19,6 +19,7 @@ export 'src/rust/api/crypto.dart'
         TransferCryptoError,
         decryptTransfer,
         encryptTransfer,
+        encryptTransferFile,
         envelopeOverhead;
 
 abstract final class BlastqrCrypto {
