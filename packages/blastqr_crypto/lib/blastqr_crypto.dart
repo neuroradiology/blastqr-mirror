@@ -2,7 +2,7 @@
 ///
 /// ```dart
 /// await BlastqrCrypto.init();
-/// final envelope = await encryptTransfer(plain: bytes, password: pw);
+/// await encryptTransferFile(inputPath: input, outputPath: output, password: pw);
 /// final plain = await decryptTransfer(envelope: envelope, password: pw);
 /// ```
 library;
@@ -18,7 +18,6 @@ export 'src/rust/api/crypto.dart'
     show
         TransferCryptoError,
         decryptTransfer,
-        encryptTransfer,
         encryptTransferFile,
         envelopeOverhead;
 

@@ -6,9 +6,6 @@ import 'package:blastqr_crypto/blastqr_crypto.dart';
 export 'package:blastqr_crypto/blastqr_crypto.dart' show TransferCryptoError;
 
 abstract final class TransferCrypto {
-  static Future<Uint8List> encrypt(Uint8List plain, String password) =>
-      encryptTransfer(plain: plain, password: normalizePassword(password));
-
   /// Encrypts the file at [inputPath] into a new file at [outputPath],
   /// without reading either into memory.
   static Future<void> encryptFile(

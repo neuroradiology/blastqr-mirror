@@ -435,3 +435,30 @@ void main() {
     }, skip: _skip);
   });
 }
+
+/// [writeTransferObject], returned as bytes.
+Future<({Uint8List bytes, bool gzipped})> buildTransferObject({
+  required String fileName,
+  Uint8List? content,
+  String? contentPath,
+  required bool tryGzip,
+  String? password,
+  bool isBundle = false,
+}) async {
+  final directory = await Directory.systemTemp.createTemp('transfer_');
+  try {
+    final file = File('${directory.path}/transfer.bin');
+    final (length: _, :gzipped) = await writeTransferObject(
+      file.path,
+      fileName: fileName,
+      content: content,
+      contentPath: contentPath,
+      tryGzip: tryGzip,
+      password: password,
+      isBundle: isBundle,
+    );
+    return (bytes: await file.readAsBytes(), gzipped: gzipped);
+  } finally {
+    await directory.delete(recursive: true);
+  }
+}

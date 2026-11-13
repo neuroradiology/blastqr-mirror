@@ -33,15 +33,10 @@ pub fn envelope_overhead() -> u32 {
     envelope::ENVELOPE_OVERHEAD as u32
 }
 
-/// Encrypts `plain` with a key derived from `password` (Argon2id,
-/// 64 MiB, 3 iterations), using ChaCha20-Poly1305.
-pub fn encrypt_transfer(plain: Vec<u8>, password: String) -> Vec<u8> {
-    envelope::encrypt(&plain, &password)
-}
-
-/// Like [encrypt_transfer], from the file at `input_path` into a new file at
-/// `output_path`. Neither is held in memory: the output is memory-mapped and
-/// encrypted in place.
+/// Encrypts the file at `input_path` into a new file at `output_path`, with
+/// a key derived from `password` (Argon2id, 64 MiB, 3 iterations), using
+/// ChaCha20-Poly1305. Neither is held in memory: the output is
+/// memory-mapped and encrypted in place.
 pub fn encrypt_transfer_file(
     input_path: String,
     output_path: String,
@@ -63,7 +58,7 @@ pub fn encrypt_transfer_file(
     Ok(())
 }
 
-/// Decrypts an envelope made by [encrypt_transfer].
+/// Decrypts an envelope made by [encrypt_transfer_file].
 pub fn decrypt_transfer(
     envelope: Vec<u8>,
     password: String,

@@ -85,7 +85,7 @@ int estimateSendBytes(
       (settings == null ? f.size : estimatedVideoBytes(info, settings));
 });
 
-/// A transfer object ready to show as QR codes (see [buildTransferObject]),
+/// A transfer object ready to show as QR codes (see [writeTransferObject]),
 /// kept in a temp [file] so it isn't held in memory while it's sent.
 class PreparedTransfer {
   const PreparedTransfer({
@@ -170,9 +170,6 @@ Future<PreparedTransfer> prepareTransfer(
       password: options.password,
       isBundle: files.length > 1,
     );
-  } catch (_) {
-    if (await file.exists()) await file.delete();
-    rethrow;
   } finally {
     if (content.temporary) await File(content.path!).delete();
   }
@@ -260,7 +257,7 @@ Future<_Content> _singleFile(
 /// metadata block with [fileName], then the content ([content], or the file
 /// at [contentPath]), gzipped as a whole if [tryGzip] and only if that makes
 /// it smaller, then encrypted if a [password] is given. Returns its length
-/// and whether gzip was kept.
+/// and whether gzip was kept. Nothing is left at [path] if it fails.
 ///
 /// Written in chunks, so even large files never sit in memory whole.
 Future<({int length, bool gzipped})> writeTransferObject(
@@ -280,64 +277,32 @@ Future<({int length, bool gzipped})> writeTransferObject(
   final plainPath = password == null ? path : '$path.plain';
   try {
     final (:length, :gzipped) = await Isolate.run(() {
+      ({int read, int written}) write({required bool gzip}) =>
+          _writeChunked(plainPath, metadata, content, contentPath, gzip: gzip);
       if (tryGzip) {
-        final (:read, :written) = _writeChunked(
-          plainPath,
-          metadata,
-          content,
-          contentPath,
-          gzip: true,
-        );
+        final (:read, :written) = write(gzip: true);
         // Only keep gzip when it helps. This also keeps files near the size
         // limit from growing past what the u32 header can describe.
         if (written < read) return (length: written, gzipped: true);
       }
-      final (read: _, :written) = _writeChunked(
-        plainPath,
-        metadata,
-        content,
-        contentPath,
-        gzip: false,
-      );
-      return (length: written, gzipped: false);
+      return (length: write(gzip: false).written, gzipped: false);
     });
     if (password == null) return (length: length, gzipped: gzipped);
     // Encrypt last: compressed ciphertext wouldn't shrink, and the filename
     // in the metadata ends up encrypted too.
     await TransferCrypto.encryptFile(plainPath, path, password);
     return (length: await File(path).length(), gzipped: gzipped);
+  } catch (_) {
+    await _deleteIfExists(path);
+    rethrow;
   } finally {
-    if (password != null && await File(plainPath).exists()) {
-      await File(plainPath).delete();
-    }
+    if (password != null) await _deleteIfExists(plainPath);
   }
 }
 
-/// [writeTransferObject], returned as bytes instead.
-Future<({Uint8List bytes, bool gzipped})> buildTransferObject({
-  required String fileName,
-  Uint8List? content,
-  String? contentPath,
-  required bool tryGzip,
-  String? password,
-  bool isBundle = false,
-}) async {
-  final directory = await Directory.systemTemp.createTemp('transfer_');
-  try {
-    final file = File('${directory.path}/transfer.bin');
-    final (length: _, :gzipped) = await writeTransferObject(
-      file.path,
-      fileName: fileName,
-      content: content,
-      contentPath: contentPath,
-      tryGzip: tryGzip,
-      password: password,
-      isBundle: isBundle,
-    );
-    return (bytes: await file.readAsBytes(), gzipped: gzipped);
-  } finally {
-    await directory.delete(recursive: true);
-  }
+Future<void> _deleteIfExists(String path) async {
+  final file = File(path);
+  if (await file.exists()) await file.delete();
 }
 
 /// Writes [metadata] then the content to [path], through gzip if [gzip],
