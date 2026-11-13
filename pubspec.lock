@@ -974,10 +974,11 @@ packages:
   raptorq_flutter:
     dependency: "direct main"
     description:
-      path: "../raptorq_flutter"
-      relative: true
-    source: path
-    version: "0.1.1"
+      name: raptorq_flutter
+      sha256: e1e031cdcb75b4b0eb5da93b467ed99fe3bff1722963dd40239416fb6bed7425
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   receive_sharing_intent:
     dependency: "direct main"
     description:
