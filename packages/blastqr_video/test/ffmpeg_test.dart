@@ -86,7 +86,6 @@ Encoders:
       input: 'in.mov',
       output: 'out.mp4',
       settings: _potato,
-      encoder: 'libx264',
       source: (
         info: const VideoInfo(
           duration: Duration(seconds: 10),
@@ -130,7 +129,7 @@ Encoders:
         '-loglevel', 'error', //
         '-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=60:duration=3',
         '-f', 'lavfi', '-i', 'sine=frequency=440:duration=3',
-        '-ac', '2', '-c:v', ffmpeg!.encoder, '-c:a', 'aac', input,
+        '-ac', '2', '-c:v', 'libx264', '-c:a', 'aac', input,
       ]);
       expect(result.exitCode, 0, reason: '${result.stderr}');
     });
@@ -188,9 +187,7 @@ bool _hasFfmpeg() {
     final probe = Process.runSync('ffprobe', ['-version']);
     final ffmpeg = Process.runSync('ffmpeg', ['-hide_banner', '-encoders']);
     final names = encoderNames(ffmpeg.stdout as String);
-    return probe.exitCode == 0 &&
-        names.contains('aac') &&
-        (names.contains('libx264') || names.contains('libopenh264'));
+    return probe.exitCode == 0 && names.containsAll(['libx264', 'aac']);
   } on ProcessException {
     return false;
   }

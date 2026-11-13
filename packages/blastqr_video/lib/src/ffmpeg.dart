@@ -8,9 +8,6 @@ import 'package:flutter/services.dart';
 
 import 'types.dart';
 
-/// H.264 encoders ffmpeg can use, best first.
-const _h264Encoders = ['libx264', 'libopenh264'];
-
 /// What [Ffmpeg.probe] reads, with what [Ffmpeg.compress] also needs.
 typedef FfprobeResult = ({VideoInfo info, double? frameRate});
 
@@ -20,22 +17,19 @@ typedef FfprobeResult = ({VideoInfo info, double? frameRate});
 /// extension adds the H.264 encoder; elsewhere they're the system's. They
 /// run as separate programs, so nothing of FFmpeg is bundled or linked.
 class Ffmpeg {
-  Ffmpeg._(this.encoder);
+  const Ffmpeg._();
 
-  /// The H.264 encoder to use, one of [_h264Encoders].
-  final String encoder;
-
-  /// Null unless `ffprobe` runs and `ffmpeg` has an H.264 and an AAC
-  /// encoder.
+  /// Null unless `ffprobe` runs and `ffmpeg` has the x264 and AAC encoders.
+  /// Builds without x264, like Fedora's default one, may list OpenH264, but
+  /// that's often only a stub library, and they can't read HEVC either.
   static Future<Ffmpeg?> find() async {
     try {
       final probe = await Process.run('ffprobe', ['-version']);
       final ffmpeg = await Process.run('ffmpeg', ['-hide_banner', '-encoders']);
       if (probe.exitCode != 0 || ffmpeg.exitCode != 0) return null;
       final names = encoderNames(ffmpeg.stdout as String);
-      if (!names.contains('aac')) return null;
-      final encoder = _h264Encoders.where(names.contains).firstOrNull;
-      return encoder == null ? null : Ffmpeg._(encoder);
+      if (!names.containsAll(['libx264', 'aac'])) return null;
+      return const Ffmpeg._();
     } on ProcessException {
       return null;
     }
@@ -73,7 +67,6 @@ class Ffmpeg {
         input: input,
         output: output,
         settings: settings,
-        encoder: encoder,
         source: source,
       ),
     );
@@ -179,7 +172,6 @@ List<String> ffmpegArguments({
   required String input,
   required String output,
   required VideoEncodeSettings settings,
-  required String encoder,
   required FfprobeResult source,
 }) {
   final info = source.info;
@@ -205,14 +197,17 @@ List<String> ffmpegArguments({
     '-vf',
     filters.join(','),
     '-c:v',
-    encoder,
+    'libx264',
     '-b:v',
     '${settings.videoBitrate}',
     '-maxrate',
     '${settings.videoBitrate * 3 ~/ 2}',
     '-bufsize',
     '${settings.videoBitrate * 2}',
-    if (encoder == 'libx264') ...['-preset', 'veryfast', '-profile:v', 'high'],
+    '-preset',
+    'veryfast',
+    '-profile:v',
+    'high',
     '-c:a',
     'aac',
     '-b:a',
